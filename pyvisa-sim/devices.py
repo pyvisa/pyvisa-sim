@@ -15,23 +15,24 @@ from io import open, StringIO
 from contextlib import closing
 
 from pyvisa.compat import string_types
+from pyvisa import logger
 
 try:
     import Queue as queue
 except ImportError:
     import queue
 
-from . import sessions
+from . import common, sessions
 
 DEFAULT = tuple(r"""
 @resource ASRL1
->>> *IDN?\n
+>>> *IDN?\r\n
 <<< Very Big Corporation of America,Jet Propulsor,SIM42,4.2\n
 @end
 
 @resource USB::0x1234::125::A22-5
->>> *IDN?\n
-<<< Very Big Corporation of America,Jet Propulsor,SIM42,4.2\n
+>>> *IDN?\r\n<EOM4882>
+<<< Very Big Corporation of America,Jet Propulsor,SIM42,4.2\n<EOM4882>
 @end
 
 @resource TCPIP::localhost
@@ -40,8 +41,8 @@ DEFAULT = tuple(r"""
 @end
 
 @resource GPIB0::12
->>> *IDN?\n
-<<< Very Big Corporation of America,Jet Propulsor,SIM42,4.2\n
+>>> *IDN?\r\n<EOM4882>
+<<< Very Big Corporation of America,Jet Propulsor,SIM42,4.2\n<EOM4882>
 @end
 """.split('\n'))
 
@@ -140,9 +141,9 @@ class Device(object):
         :param data: single element byte
         :type data: bytes
         """
-
-        if not isinstance(data, bytes):
-            raise TypeError('data must be an instance of bytes.')
+        logger.debug('Writing into device input buffer: %r' % data)
+        if not isinstance(data, (bytes, sessions.SpecialByte)):
+            raise TypeError('data must be an instance of bytes or SpecialByte')
 
         if len(data) !=1:
             raise ValueError('data must have a length of 1, not %d' % len(data))
@@ -153,7 +154,7 @@ class Device(object):
         # list of messages it understands and reply accordingly.
         try:
             answer = self._queries[tuple(self._input_buffer)]
-
+            logger.debug('Found answer in queries: %s' % repr(answer))
             for part in answer:
                 self._output_buffer.put(part)
 
