@@ -20,7 +20,14 @@ from pyvisa import constants, attributes, logger
 
 from . import common
 
-EOM4882 = common.NamedObject('EOM4882')
+
+class SpecialByte(common.NamedObject):
+
+    def __len__(self):
+        return 1
+
+
+EOM4882 = SpecialByte('EOM4882')
 
 
 class Session(object):
@@ -65,6 +72,7 @@ class Session(object):
                 logger.warning('%s is already registered in the ResourceManager. '
                                'Overwriting with %s' % ((interface_type, resource_class), python_class))
 
+            python_class.session_type = (interface_type, resource_class)
             cls._session_classes[(interface_type, resource_class)] = python_class
             return python_class
         return _internal
@@ -78,6 +86,10 @@ class Session(object):
                       constants.VI_ATTR_RSRC_CLASS: parsed['resource_class'],
                       constants.VI_ATTR_INTF_TYPE: parsed['interface_type']}
         self.after_parsing()
+
+        #: devices.Device
+        self.device = None
+
 
     def after_parsing(self):
         pass

@@ -9,6 +9,9 @@
     :license: MIT, see LICENSE for more details.
 """
 
+import sys
+
+
 from pyvisa import constants
 
 
@@ -23,6 +26,32 @@ class NamedObject(object):
         return '<%s>' % self.name
 
     __str__ = __repr__
+
+
+if sys.version >= '3':
+    def iter_bytes(data, mask, send_end):
+        for d in data[:-1]:
+            yield bytes([d & ~mask])
+
+        if send_end:
+            yield bytes([data[-1] | ~mask])
+        else:
+            yield bytes([data[-1] & ~mask])
+
+    int_to_byte = lambda val: bytes([val])
+    last_int = lambda val: val[-1]
+else:
+    def iter_bytes(data, mask, send_end):
+        for d in data[:-1]:
+            yield chr(ord(d) & ~mask)
+
+        if send_end:
+            yield chr(ord(data[-1]) | ~mask)
+        else:
+            yield chr(ord(data[-1]) & ~mask)
+
+    int_to_byte = chr
+    last_int = lambda val: ord(val[-1])
 
 
 class InvalidResourceName(ValueError):

@@ -26,10 +26,6 @@ from . import sessions
 @sessions.Session.register(constants.InterfaceType.gpib, 'INSTR')
 class GPIBInstrumentSession(sessions.Session):
 
-    def __init__(self, resource_manager_session, resource_name, parsed):
-        super(GPIBInstrumentSession, self).__init__(resource_manager_session, resource_name, parsed)
-        self.buffer = queue.Queue()
-
     def after_parsing(self):
         self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed['board'])
         self.attrs[constants.VI_ATTR_GPIB_PRIMARY_ADDR] = int(self.parsed['primary_address'])
@@ -46,12 +42,17 @@ class GPIBInstrumentSession(sessions.Session):
 
         while now - start <= timeout:
             try:
-                out += self.buffer.get_nowait()
+                last = self.device.read()
             except queue.Empty:
                 time.sleep(.01)
                 continue
             finally:
                 now = time.time()
+
+            if last == sessions.EOM4882:
+                return out, constants.StatusCode.success
+
+            out += last
 
             if enabled:
                 if out[-1] == end_char:
@@ -66,7 +67,7 @@ class GPIBInstrumentSession(sessions.Session):
         send_end = self.get_attribute(constants.VI_ATTR_SEND_END_EN)
 
         for i in range(len(data)):
-            self.buffer.put(data[i:i+1])
+            self.device.write(data[i:i+1])
 
         if send_end:
-            self.buffer.put(sessions.EOM4882)
+            self.device.write(sessions.EOM4882)

@@ -29,9 +29,6 @@ class TCPIPInstrumentSession(sessions.Session):
     def __init__(self, resource_manager_session, resource_name, parsed):
         super(TCPIPInstrumentSession, self).__init__(resource_manager_session, resource_name, parsed)
 
-        #: devices.Device
-        self.device = None
-
     def after_parsing(self):
         self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed['board'])
         self.attrs[constants.VI_ATTR_TCPIP_ADDR] = self.parsed['host_address']

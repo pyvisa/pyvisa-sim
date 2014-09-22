@@ -38,8 +38,6 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
     Importantly, the user is unaware of this. PyVisaLibrary behaves for the user just as NIVisaLibrary.
     """
 
-    #: List[sessions.Session]
-
     def _init(self):
 
         #: map session handle to session object.
@@ -47,9 +45,9 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         self.sessions = {}
 
         if self.library_path == 'unset':
-            self.resources = devices.Devices(devices.DEFAULT, common.to_canonical_name)
+            self.devices = devices.Devices(devices.DEFAULT, common.to_canonical_name)
         else:
-            self.resources = devices.Devices(self.library_path, common.to_canonical_name)
+            self.devices = devices.Devices(self.library_path, common.to_canonical_name)
 
     def _register(self, obj):
         """Creates a random but unique session handle for a session object,
@@ -99,7 +97,7 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         sess = cls(session, resource_name, parsed)
 
         try:
-            sess.configuration = self.resources[sess.attrs[constants.VI_ATTR_RSRC_NAME]]
+            sess.device = self.devices[sess.attrs[constants.VI_ATTR_RSRC_NAME]]
         except KeyError:
             return 0, constants.StatusCode.error_resource_not_found
 
@@ -156,7 +154,7 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
 
         # For each session type, ask for the list of connected resources and merge them into a single list.
 
-        resources = self.resources.list_resources()
+        resources = self.devices.list_resources()
         count = len(resources)
         resources = iter(resources)
         return resources, count, next(resources), constants.StatusCode.success
