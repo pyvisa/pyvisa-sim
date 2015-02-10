@@ -1,31 +1,77 @@
+spec: "1.0"
 devices:
   device 1:
     eom:
       ASRL INSTR:
-        q: \r\n
-        r: \n
+        q: "\r\n"
+        r: "\n"
     error: ERROR
     dialogues:
-      - q: "*IDN?"
-        r: Very Big Corporation of America, Jet Propulsor, SIM42, 4.2
-      - q: Life?
-        r: 42
-      - q: No answer
+      - q: "?IDN"
+        r: "LSG Serial #1234"
+      - q: "!CAL"
+        r: OK
     properties:
       frequency:
         default: 100.0
         getter:
-          q: "FREQ?"
-          r: "{:.3f}"
+          q: "?FREQ"
+          r: "{:.2f}"
         setter:
-          q: FREQ {:.3f}
+          q: "!FREQ {:.2f}"
           r: OK
-          e: ERROR
+        specs:
+          min: 1
+          max: 100000
+          type: float
+      amplitude:
+        default: 1.0
+        getter:
+          q: "?AMP"
+          r: "{:.2f}"
+        setter:
+          q: "!AMP {:.2f}"
+          r: OK
         specs:
           min: 0
-          max: 1000
+          max: 10
           type: float
+      offset:
+        default: 0
+        getter:
+          q: "?OFF"
+          r: "{:.2f}"
+        setter:
+          q: "!OFF {:.2f}"
+          r: OK
+        specs:
+          min: 0
+          max: 10
+          type: float
+      output_enabled:
+        default: 0
+        getter:
+          q: "?OUT"
+          r: "{:d}"
+        setter:
+          q: "!OUT {:d}"
+          r: OK
+        specs:
+          valid: [0, 1]
+          type: int
+      waveform:
+        default: 0
+        getter:
+          q: "?WVF"
+          r: "{:d}"
+        setter:
+          q: "!WVF {:d}"
+          r: OK
+        specs:
+          valid: [0, 1, 2, 3]
+          type: int
 
 resources:
   ASRL1::INSTR:
     device: device 1
+
