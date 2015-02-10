@@ -22,9 +22,8 @@ from . import sessions
 from . import common
 
 def text_to_iter(val):
-    """
-    :param val:
-    :return:
+    """Takes a text message and return a tuple
+
     """
     val = val.replace('\\r', '\r').replace('\\n', '\n')
     if val.endswith('<EOM4882>'):
@@ -34,8 +33,18 @@ def text_to_iter(val):
 
 
 class Property(object):
+    """A device property
+    """
+
+    _value = None
 
     def __init__(self, name, value, specs):
+        """
+        :param name: name of the property
+        :param value: default value
+        :param specs: specification dictionary
+        :return:
+        """
 
         t = specs.get('type', None)
         if t:
@@ -56,6 +65,7 @@ class Property(object):
         self.set(value)
 
     def set(self, value):
+
         specs = self.specs
         if 'type' in specs:
             value = specs['type'](value)
@@ -73,14 +83,16 @@ class Device(object):
 
     :param name: The identification name of the device
     :type name: str
-    :param name: Fullpath of the device where it is defined.
+    :param name: fullpath of the device where it is defined.
     :type name: str
     """
 
     # To be bound when adding the Device to Devices
     _resource_name = None
 
+    # Default end of message used in query operations
     _query_eom = None
+    # Default end of message used in response operations
     _response_eom = None
 
     def __init__(self, name, error_response):
@@ -124,6 +136,8 @@ class Device(object):
 
     @property
     def resource_name(self):
+        """Assigned resource name
+        """
         return self._resource_name
 
     @resource_name.setter
@@ -134,9 +148,22 @@ class Device(object):
                                                           p['resource_class'])]
 
     def add_dialogue(self, query, response):
+        """Add dialogue to device.
+
+        :param query: query string
+        :param response: response string
+        """
         self._queries[text_to_iter(query)] = text_to_iter(response)
 
     def add_property(self, name, default_value, getter_pair, setter_triplet, specs):
+        """Add property to device
+
+        :param name: property name
+        :param default_value: default value as string
+        :param getter_pair: (query, response)
+        :param setter_triplet: (query, response, error)
+        :param specs: specification of the Property
+        """
         self._properties[name] = Property(name, default_value, specs)
 
         query, response = getter_pair
@@ -149,6 +176,12 @@ class Device(object):
                               text_to_iter(error)))
 
     def add_eom(self, type_class, query_termination, response_termination):
+        """Add default end of message for a given interface type and resource class.
+
+        :param type_class: interface type and resource class as strings joined by space
+        :param query_termination: end of message used in queries.
+        :param response_termination: end of message used in responses.
+        """
         interface_type, resource_class = type_class.split(' ')
         interface_type = getattr(constants.InterfaceType, interface_type.lower())
         self._eoms[(interface_type, resource_class)] = (text_to_iter(query_termination),
@@ -189,9 +222,15 @@ class Device(object):
         self._input_buffer.clear()
 
     def _match(self, part):
-        # After writing to the input buffer, tries to see if the query is in the
-        # list of dialogues it understands and reply accordingly.
+        """Tries to match in dialogues, getters and setters
 
+        :param part: message tuple
+        :type part: Tuple[bytes]
+        :return: answer if found or None
+        :rtype: Tuple[bytes] | None
+        """
+
+        # Try to match in the queries
         try:
             answer = self._queries[part]
             logger.debug('Found response in queries: %s' % repr(answer))
@@ -247,7 +286,7 @@ class Devices(object):
         self._internal = {}
 
     def add_device(self, resource_name, device):
-        """Add device.
+        """Bind device to resource name
         """
 
         if not device.resource_name is None:

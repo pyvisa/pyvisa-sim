@@ -3,7 +3,8 @@
     pyvisa-sim.common
     ~~~~~~~~~~~~~~~~~
 
-    Common code.
+    This code is currently taken from PyVISA-py.
+    Do not edit here.
 
     :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
     :license: MIT, see LICENSE for more details.

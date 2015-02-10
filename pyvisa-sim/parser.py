@@ -19,10 +19,15 @@ import yaml
 from .devices import Devices, Device
 
 
+#: Version of the specification
 SPEC_VERSION = '1.0'
 
+
 def _s(s):
+    """Strip white spaces
+    """
     return s.strip(' ')
+
 
 def _get_pair(dd):
     """Return a pair from a dialogue dictionary.
@@ -51,6 +56,8 @@ def _get_triplet(dd, default_error):
 
 
 def _load(content_or_fp):
+    """YAML Parse a file or str and check version.
+    """
     try:
         data = yaml.load(content_or_fp, Loader=yaml.loader.BaseLoader)
     except Exception as e:
@@ -64,30 +71,44 @@ def _load(content_or_fp):
     return data
 
 
-def parse_resource(file):
-
-    with closing(pkg_resources.resource_stream(__name__, file)) as fp:
+def parse_resource(name):
+    """Parse a resource file
+    """
+    with closing(pkg_resources.resource_stream(__name__, name)) as fp:
         rbytes = fp.read()
 
     return _load(StringIO(rbytes.decode('utf-8')))
 
 
-def parse_file(file):
+def parse_file(fullpath):
+    """Parse a file
+    """
 
-    with open(file, encoding='utf-8') as fp:
+    with open(fullpath, encoding='utf-8') as fp:
         return _load(fp)
 
 
 def get_devices(filename, is_resource):
+    """Get a Devices object from a file.
+
+    :param filename: full path of the file to parse or name of the resource.
+    :param is_resource: boolean indicating if it is a resource.
+    :rtype: Devices
+    """
 
     if is_resource:
         data = parse_resource(filename)
     else:
         data = parse_file(filename)
 
+    # Use to cache files that have been already read:
+    # (name, is_resource) -> devices dict
     devices_in_file = {}
 
     devices = Devices()
+
+    # Iterate through the resources and generate each individual device
+    # on demand.
 
     for resource_name, resource_dict in data.get('resources', {}).items():
         device_name = resource_dict['device']
@@ -96,6 +117,7 @@ def get_devices(filename, is_resource):
         new_is_resource = resource_dict.get('is_resource', False)
 
         if new_filename:
+            # If the device definition should be loaded from another file
             if new_filename not in devices_in_file:
                 if new_is_resource:
                     new_data = parse_resource(new_filename)
@@ -103,9 +125,9 @@ def get_devices(filename, is_resource):
                     path = os.path.dirname(filename)
                     new_data = parse_file(os.path.join(path, os.path.normpath(new_filename)))
 
-                devices_in_file[new_filename] = new_data['devices']
+                devices_in_file[(new_filename, is_resource)] = new_data['devices']
 
-            device_dict = devices_in_file[new_filename][device_name]
+            device_dict = devices_in_file[(new_filename, is_resource)][device_name]
         else:
             device_dict = data['devices'][device_name]
 
@@ -116,6 +138,12 @@ def get_devices(filename, is_resource):
 
 
 def get_device(name, device_dict):
+    """Get a device from a device dictionary.
+
+    :param name: name of the device
+    :param device_dict: device dictionary
+    :rtype: Device
+    """
     err = device_dict.get('error', '')
 
     device = Device(name, err)
