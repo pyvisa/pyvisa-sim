@@ -34,8 +34,6 @@ def _get_pair(dd):
 
     :param dd: Dialogue dictionary.
     :type dd: Dict[str, str]
-    :param default_error: Default error response
-    :type default_error: str
     :return: (query, response)
     :rtype: (str, str)
     """

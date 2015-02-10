@@ -21,15 +21,6 @@ from pyvisa import constants, attributes, logger
 from . import common
 
 
-class SpecialByte(common.NamedObject):
-
-    def __len__(self):
-        return 1
-
-
-EOM4882 = SpecialByte('EOM4882')
-
-
 class Session(object):
     """A base class for Session objects.
 

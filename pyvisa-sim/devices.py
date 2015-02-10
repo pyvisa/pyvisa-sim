@@ -18,19 +18,15 @@ import stringparser
 
 from pyvisa import logger, constants
 
-from . import sessions
 from . import common
 
 
-def text_to_iter(val):
+def to_bytes(val):
     """Takes a text message and return a tuple
 
     """
     val = val.replace('\\r', '\r').replace('\\n', '\n')
-    if val.endswith('<EOM4882>'):
-        return tuple(el.encode() for el in val.strip('<EOM4882>')) + (sessions.EOM4882, )
-    else:
-        return tuple(el.encode() for el in val)
+    return val.encode()
 
 
 class Property(object):
@@ -76,7 +72,7 @@ class Property(object):
             raise ValueError
         if 'valid' in specs and value not in specs['valid']:
             raise ValueError
-        self.value = value
+        self._value = value
 
 
 class Device(object):
@@ -92,8 +88,11 @@ class Device(object):
     _resource_name = None
 
     # Default end of message used in query operations
-    _query_eom = None
+    # :type: bytes
+    _query_eom = b''
+
     # Default end of message used in response operations
+    # :type: bytes
     _response_eom = None
 
     def __init__(self, name, error_response):
@@ -101,39 +100,40 @@ class Device(object):
         # Name of the device.
         self.name = name
 
-        self.error_response = text_to_iter(error_response)
+        # :type: bytes
+        self.error_response = to_bytes(error_response)
 
         #: Stores the specific end of messages for device.
         #: TYPE CLASS -> (query termination, response termination)
-        #: dict[str, (str, str)]
+        #: :type: dict[(pyvisa.constants.InterfaceType, str), (str, str)]
         self._eoms = {}
 
         #: Stores the queries accepted by the device.
         #: query: (response, error response)
-        #: dict[tuple[bytes], tuple[bytes]]
+        #: :type: dict[bytes, bytes]
         self._dialogues = {}
 
         #: Maps property names to value, type, validator
-        #: dict[str, (object, callable, callable)]
+        #: :type: dict[str, (object, callable, callable)]
         self._properties = {}
 
         #: Stores the getter queries accepted by the device.
         #: query: (property_name, response)
-        #: dict[tuple[bytes], (str, tuple[bytes])]
+        #: :type: dict[bytes, (str, str)]
         self._getters = {}
 
         #: Stores the setters queries accepted by the device.
         #: (property_name, string parser query, response, error response)
-        #: list[(str, tuple[bytes], tuple[bytes], tuple[bytes]])]
+        #: :type: list[(str, stringparser.Parser, bytes, bytes)]
         self._setters = []
 
         #: Buffer in which the user can read
-        #: queue.Queue[bytes]
-        self._output_buffer = queue.Queue()
+        #: :type: bytearray
+        self._output_buffer = bytearray()
 
         #: Buffer in which the user can write
-        #: [bytes]
-        self._input_buffer = list()
+        #: :type: bytearray
+        self._input_buffer = bytearray()
 
     @property
     def resource_name(self):
@@ -154,7 +154,7 @@ class Device(object):
         :param query: query string
         :param response: response string
         """
-        self._dialogues[text_to_iter(query)] = text_to_iter(response)
+        self._dialogues[to_bytes(query)] = to_bytes(response)
 
     def add_property(self, name, default_value, getter_pair, setter_triplet, specs):
         """Add property to device
@@ -168,13 +168,13 @@ class Device(object):
         self._properties[name] = Property(name, default_value, specs)
 
         query, response = getter_pair
-        self._getters[text_to_iter(query)] = name, response
+        self._getters[to_bytes(query)] = name, response
 
         query, response, error = setter_triplet
         self._setters.append((name,
                               stringparser.Parser(query),
-                              text_to_iter(response),
-                              text_to_iter(error)))
+                              to_bytes(response),
+                              to_bytes(error)))
 
     def add_eom(self, type_class, query_termination, response_termination):
         """Add default end of message for a given interface type and resource class.
@@ -185,8 +185,8 @@ class Device(object):
         """
         interface_type, resource_class = type_class.split(' ')
         interface_type = getattr(constants.InterfaceType, interface_type.lower())
-        self._eoms[(interface_type, resource_class)] = (text_to_iter(query_termination),
-                                                        text_to_iter(response_termination))
+        self._eoms[(interface_type, resource_class)] = (to_bytes(query_termination),
+                                                        to_bytes(response_termination))
 
     def write(self, data):
         """Write data into the device input buffer.
@@ -195,30 +195,27 @@ class Device(object):
         :type data: bytes
         """
         logger.debug('Writing into device input buffer: %r' % data)
-        if not isinstance(data, (bytes, sessions.SpecialByte)):
-            raise TypeError('data must be an instance of bytes or SpecialByte')
+        if not isinstance(data, bytes):
+            raise TypeError('data must be an instance of bytes')
 
         if len(data) != 1:
             raise ValueError('data must have a length of 1, not %d' % len(data))
 
-        self._input_buffer.append(data)
+        self._input_buffer.extend(data)
 
         l = len(self._query_eom)
-        if not tuple(self._input_buffer[-l:]) == self._query_eom:
+        if not self._input_buffer.endswith(self._query_eom):
             return
 
-        input_tuple = tuple(self._input_buffer[:-l])
-        response = self._match(input_tuple)
+        query = bytes(self._input_buffer[:-l])
+        response = self._match(query)
         eom = self._response_eom
 
         if response is None:
             response = self.error_response
 
-        for part in response:
-            self._output_buffer.put(part)
-
-        for part in eom:
-            self._output_buffer.put(part)
+        self._output_buffer.extend(response)
+        self._output_buffer.extend(eom)
 
         self._input_buffer.clear()
 
@@ -246,12 +243,12 @@ class Device(object):
             name, response = self._getters[query]
             logger.debug('Found response in getter of %s' % name)
 
-            return text_to_iter(response.format(self._properties[name].value))
+            return bytes(response.format(self._properties[name]._value), encoding='utf-8')
 
         except KeyError:
             pass
 
-        q = b''.join(query).decode('utf-8')
+        q = query.decode('utf-8')
 
         # Finally in the setters, this will be slow.
         for name, parser, response, err in self._setters:
@@ -273,7 +270,11 @@ class Device(object):
     def read(self):
         """Return a single byte from the output buffer
         """
-        return self._output_buffer.get_nowait()
+        if self._output_buffer:
+            b, self._output_buffer = self._output_buffer[0:1], self._output_buffer[1:]
+            return b
+
+        return b''
 
 
 class Devices(object):

@@ -24,9 +24,6 @@ from . import common
 from . import sessions
 
 
-ASRLBREAK = sessions.SpecialByte('ASRLBREAK')
-
-
 @sessions.Session.register(constants.InterfaceType.asrl, 'INSTR')
 class SerialInstrumentSession(sessions.Session):
 
@@ -106,7 +103,8 @@ class SerialInstrumentSession(sessions.Session):
 
             elif asrl_end == constants.SerialTermination.termination_break:
                 if send_end:
-                    self.device.write(ASRLBREAK)
+                    # ASRL Break
+                    pass
 
             elif not asrl_end == constants.SerialTermination.none:
                 raise ValueError('Unknown value for VI_ATTR_ASRL_END_OUT')
