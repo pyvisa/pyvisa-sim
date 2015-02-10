@@ -62,6 +62,9 @@ setup(name='PyVISA-sim',
         ],
       packages=['pyvisa-sim', 
                 'pyvisa-sim.testsuite'],
+      package_data={
+          'pyvisa-sim': ['default.yaml']
+      },
       platforms="Linux, Windows,Mac",
       use_2to3=False,
       zip_safe=False)
