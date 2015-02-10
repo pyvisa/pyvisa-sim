@@ -1,0 +1,27 @@
+devices:
+  device 1:
+    error: ERROR
+    dialogues:
+      - q: "*IDN?\r\n"
+        r: Very Big Corporation of America, Jet Propulsor, SIM42, 4.2\n
+      - q: Life?\r\n
+        r: 42\n
+      - q: No answer\n
+    properties:
+      frequency:
+        default: 100.0
+        getter:
+          q: "FREQ?\r\n"
+          r: "{:.3f}\n"
+        setter:
+          q: FREQ {:.3f}\r\n
+          r: OK\n
+          e: ERROR\n
+        specs:
+          min: 0
+          max: 1000
+          type: float
+
+resources:
+  ASRL1::INSTR:
+    device: device 1
