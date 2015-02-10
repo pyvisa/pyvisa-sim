@@ -59,13 +59,20 @@ class Property(object):
 
         self.name = name
         self.specs = specs
-        self.set(value)
+        self.set_value(value)
 
-    def set(self, value):
+    @property
+    def value(self):
+        return self._value
 
+    def set_value(self, string_value):
+        """Set the value
+        """
         specs = self.specs
         if 'type' in specs:
-            value = specs['type'](value)
+            value = specs['type'](string_value)
+        else:
+            value = string_value
         if 'min' in specs and value < specs['min']:
             raise ValueError
         if 'max' in specs and value > specs['max']:
@@ -114,7 +121,7 @@ class Device(object):
         self._dialogues = {}
 
         #: Maps property names to value, type, validator
-        #: :type: dict[str, (object, callable, callable)]
+        #: :type: dict[str, Property]
         self._properties = {}
 
         #: Stores the getter queries accepted by the device.
@@ -243,7 +250,7 @@ class Device(object):
             name, response = self._getters[query]
             logger.debug('Found response in getter of %s' % name)
 
-            return bytes(response.format(self._properties[name]._value), encoding='utf-8')
+            return bytes(response.format(self._properties[name].value), encoding='utf-8')
 
         except KeyError:
             pass
@@ -259,7 +266,7 @@ class Device(object):
                 continue
 
             try:
-                self._properties[name].set(value)
+                self._properties[name].set_value(value)
                 return response
 
             except ValueError:
