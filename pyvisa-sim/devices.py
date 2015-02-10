@@ -174,15 +174,16 @@ class Device(object):
             return
 
         input_tuple = tuple(self._input_buffer[:-l])
-        answer = self._match(input_tuple)
+        response = self._match(input_tuple)
+        eom = self._response_eom
 
-        if answer is None:
-            answer = self.error_response + self._response_eom
+        if response is None:
+            response = self.error_response
 
-        for part in answer:
+        for part in response:
             self._output_buffer.put(part)
 
-        for part in self._response_eom:
+        for part in eom:
             self._output_buffer.put(part)
 
         self._input_buffer.clear()
@@ -193,7 +194,7 @@ class Device(object):
 
         try:
             answer = self._queries[part]
-            logger.debug('Found answer in queries: %s' % repr(answer))
+            logger.debug('Found response in queries: %s' % repr(answer))
 
             return answer
 
@@ -203,7 +204,7 @@ class Device(object):
         # Now in the getters
         try:
             name, answer = self._getters[part]
-            logger.debug('Found answer in getter of %s' % name)
+            logger.debug('Found response in getter of %s' % name)
 
             return text_to_iter(answer.format(self._properties[name].value))
 
@@ -216,7 +217,7 @@ class Device(object):
         for name, parser, answer, err in self._setters:
             try:
                 value = parser(q)
-                logger.debug('Found answer in getter of %s' % name)
+                logger.debug('Found response in setter of %s' % name)
             except ValueError:
                 continue
 
