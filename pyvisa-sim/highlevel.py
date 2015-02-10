@@ -16,7 +16,7 @@ import random
 from pyvisa import constants, highlevel
 
 from . import common
-from . import devices
+from . import parser
 from . import sessions
 
 # This import is required to register subclasses
@@ -44,10 +44,13 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         #: dict[int, SessionSim]
         self.sessions = {}
 
-        if self.library_path == 'unset':
-            self.devices = devices.Devices(devices.DEFAULT, common.to_canonical_name)
-        else:
-            self.devices = devices.Devices(self.library_path, common.to_canonical_name)
+        try:
+            if self.library_path == 'unset':
+                self.devices = parser.get_devices('default.yaml', True, common.to_canonical_name)
+            else:
+                self.devices = parser.get_devices(self.library_path, False, common.to_canonical_name)
+        except Exception as e:
+            raise Exception('Could not parse definitions file. %r' % e)
 
     def _register(self, obj):
         """Creates a random but unique session handle for a session object,

@@ -9,12 +9,8 @@
     :license: MIT, see LICENSE for more details.
 """
 
-import os
-import pkg_resources
-from io import open, StringIO
-from contextlib import closing
+import stringparser
 
-from pyvisa.compat import string_types
 from pyvisa import logger
 
 try:
@@ -22,32 +18,10 @@ try:
 except ImportError:
     import queue
 
-from . import common, sessions
-
-DEFAULT = tuple(r"""
-@resource ASRL1
->>> *IDN?\r\n
-<<< Very Big Corporation of America,Jet Propulsor,SIM42,4.2\n
-@end
-
-@resource USB::0x1234::125::A22-5
->>> *IDN?\r\n<EOM4882>
-<<< Very Big Corporation of America,Jet Propulsor,SIM42,4.2\n<EOM4882>
-@end
-
-@resource TCPIP::localhost
->>> *IDN?\r\n<EOM4882>
-<<< Very Big Corporation of America,Jet Propulsor,SIM42,4.2\r\n<EOM4882>
-@end
-
-@resource GPIB0::12
->>> *IDN?\r\n<EOM4882>
-<<< Very Big Corporation of America,Jet Propulsor,SIM42,4.2\n<EOM4882>
-@end
-""".split('\n'))
+from . import sessions
 
 
-def message_to_iterable(val):
+def text_to_iter(val):
     """
     :param val:
     :return:
@@ -59,19 +33,77 @@ def message_to_iterable(val):
         return tuple(el.encode() for el in val)
 
 
+class Property(object):
+
+    def __init__(self, name, value, specs):
+
+        t = specs.get('type', None)
+        if t:
+            for key, val in (('float', float), ('int', int)):
+                if t == key:
+                    t = specs['type'] = val
+                    break
+
+        for key in ('min', 'max'):
+            if key in specs:
+                specs[key] = t(specs[key])
+
+        if 'valid' in specs:
+            specs['valid'] = set([t(val) for val in specs['valid']])
+
+        self.name = name
+        self.specs = specs
+        self.set(value)
+
+    def set(self, value):
+        specs = self.specs
+        if 'type' in specs:
+            value = specs['type'](value)
+        if 'min' in specs and value < specs['min']:
+            raise ValueError
+        if 'max' in specs and value > specs['max']:
+            raise ValueError
+        if 'valid' in specs and value not in specs['valid']:
+            raise ValueError
+        self.value = value
+
+
 class Device(object):
     """A representation of a responsive device
 
-    :param resource_name: The resource name of the device.
-    :type resource_name: str
+    :param name: The identification name of the device
+    :type name: str
+    :param name: Fullpath of the device where it is defined.
+    :type name: str
     """
 
-    def __init__(self, resource_name):
-        self.resource_name = resource_name
+    resource_name = None
+
+    def __init__(self, name, error_response):
+
+        # Name of the device.
+        self.name = name
+
+        self.error_response = text_to_iter(error_response)
 
         #: Stores the queries accepted by the device.
-        #: dict[tuple[bytes], tuple[bytes])
+        #: query: (response, error response)
+        #: dict[tuple[bytes], tuple[bytes]]
         self._queries = {}
+
+        #: Maps property names to value, type, validator
+        #: dict[str, (object, callable, callable)]
+        self._properties = {}
+
+        #: Stores the getter queries accepted by the device.
+        #: query: (property_name, response)
+        #: dict[tuple[bytes], [str, tuple[bytes]]]
+        self._getters = {}
+
+        #: Stores the setters queries accepted by the device.
+        #: (property_name, string parser query, response, error response)
+        #: list[str, tuple[bytes], tuple[bytes], tuple[bytes]]]
+        self._setters = []
 
         #: Buffer in which the user can read
         #: queue.Queue[bytes]
@@ -81,59 +113,20 @@ class Device(object):
         #: [bytes]
         self._input_buffer = list()
 
-    @classmethod
-    def from_lines(cls, lines, normalizer):
-        """Create device from an iterable of configuration lines.
+    def add_dialogue(self, query, response):
+        self._queries[text_to_iter(query)] = text_to_iter(response)
 
-        :param lines: configuration liens.
-        :type lines: list[str]
-        :param normalizer: a callable the converts a VISA resource name into its normalized version.
-        :type normalizer: (str) -> str
-        :return: a Device
-        :rtype: Device
-        """
-        header, lines = lines[0], lines[1:]
+    def add_property(self, name, default_value, getter_pair, setter_triplet, specs):
+        self._properties[name] = Property(name, default_value, specs)
 
-        parts = [part for part in header.split(' ') if part]
+        query, response = getter_pair
+        self._getters[text_to_iter(query)] = name, response
 
-        if len(parts) != 2:
-            raise ValueError('Invalid header')
-
-        res = cls(normalizer(parts[1]))
-
-        ilines = iter(lines)
-        for line in ilines:
-            line = line.strip()
-
-            # Ignore empty or comment lines
-            if not line or line.startswith('#'):
-                continue
-
-            # Start a message to the device
-            if line.startswith('>>>'):
-                a = line[3:].strip(' ')
-
-                line = next(ilines, '')
-
-                while line.startswith('...'):
-                    a += line[3:].strip(' ')
-
-                # Start the response from the device
-                if line.startswith('<<<'):
-                    b = line[3:].strip(' ')
-
-                    line = next(ilines, '')
-
-                    while line.startswith('...'):
-                        b += line[3:].strip(' ')
-                else:
-                    raise ValueError('No response found')
-            else:
-                raise ValueError('Text outside dialog')
-
-            res._queries[message_to_iterable(a)] = message_to_iterable(b)
-
-        return res
+        query, response, error = setter_triplet
+        self._setters.append((name,
+                              stringparser.Parser(query),
+                              text_to_iter(response),
+                              text_to_iter(error)))
 
     def write(self, data):
         """Write data into the device input buffer.
@@ -145,22 +138,66 @@ class Device(object):
         if not isinstance(data, (bytes, sessions.SpecialByte)):
             raise TypeError('data must be an instance of bytes or SpecialByte')
 
-        if len(data) !=1:
+        if len(data) != 1:
             raise ValueError('data must have a length of 1, not %d' % len(data))
 
         self._input_buffer.append(data)
 
-        # After writing to the input buffer, tries to see if the query is in the
-        # list of messages it understands and reply accordingly.
-        try:
-            answer = self._queries[tuple(self._input_buffer)]
-            logger.debug('Found answer in queries: %s' % repr(answer))
-            for part in answer:
-                self._output_buffer.put(part)
+        # It would be better to call this only if an end of message is found.
+        # But we need to be careful with multiple messages in one.
+        answer = self._match_input_buffer()
 
-            self._input_buffer.clear()
+        if answer is None:
+            return
+
+        for part in answer:
+            self._output_buffer.put(part)
+
+        self._input_buffer.clear()
+
+    def _match_input_buffer(self):
+        # After writing to the input buffer, tries to see if the query is in the
+        # list of dialogues it understands and reply accordingly.
+
+        ib = tuple(self._input_buffer)
+
+        try:
+            answer = self._queries[ib]
+            logger.debug('Found answer in queries: %s' % repr(answer))
+
+            return answer
+
         except KeyError:
             pass
+
+        # Now in the getters
+        try:
+            name, answer = self._getters[ib]
+            logger.debug('Found answer in getter of %s' % name)
+
+            return text_to_iter(answer.format(self._properties[name].value))
+
+        except KeyError:
+            pass
+
+        q = b''.join(self._input_buffer).decode('utf-8')
+
+        # Finally in the setters, this will be slow.
+        for name, parser, answer, err in self._setters:
+            try:
+                value = parser(q)
+                logger.debug('Found answer in getter of %s' % name)
+            except ValueError:
+                continue
+
+            try:
+                self._properties[name].set(value)
+                return answer
+
+            except ValueError:
+                return err
+
+        return None
 
     def read(self):
         """Return a single byte from the output buffer
@@ -170,24 +207,22 @@ class Device(object):
 
 class Devices(object):
     """The group of connected devices.
-
-    :param configuration: file or iterable of configuration.
-    :param normalizer: a callable the converts a VISA resource name into its normalized version.
-    :type normalizer: (str) -> str
     """
 
-    def __init__(self, configuration, normalizer):
+    def __init__(self):
 
         #: Devices
         #: dict[str, Device]
         self._internal = {}
-        self.normalizer = normalizer
-        self.load_definitions(configuration)
 
-    def add_device(self, device):
+    def add_device(self, resource_name, device):
         """Add device.
         """
-        self._internal[device.resource_name] = device
+        if not device.resource_name is None:
+            raise ValueError('The device %r is already assigned to %s' % (device, device.resource_name))
+
+        self._internal[resource_name] = device
+        device.resource_name = resource_name
 
     def __getitem__(self, item):
         return self._internal[item]
@@ -198,58 +233,4 @@ class Devices(object):
         :rtype: tuple[str]
         """
         return tuple(self._internal.keys())
-
-    def load_definitions(self, file, is_resource=False):
-        """Load devices from a definition file or iterable of strings
-
-        :param file: file or iterable of strings
-        :param is_resource: indicates if the file is a resource deployed with the library.
-        :return:
-        """
-        # Permit both filenames and line-iterables
-        if isinstance(file, string_types):
-            try:
-                if is_resource:
-                    with closing(pkg_resources.resource_stream(__name__, file)) as fp:
-                        rbytes = fp.read()
-                    return self.load_definitions(StringIO(rbytes.decode('utf-8')), is_resource)
-                else:
-                    with open(file, encoding='utf-8') as fp:
-                        return self.load_definitions(fp, is_resource)
-            except Exception as e:
-                msg = getattr(e, 'message', '') or str(e)
-                raise ValueError('While opening {0}\n{1}'.format(file, msg))
-
-        ifile = enumerate(file, 1)
-        for no, line in ifile:
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
-            if line.startswith('@import'):
-                if is_resource:
-                    path = line[7:].strip()
-                else:
-                    try:
-                        path = os.path.dirname(file.name)
-                    except AttributeError:
-                        path = os.getcwd()
-                    path = os.path.join(path, os.path.normpath(line[7:].strip()))
-                self.load_definitions(path, is_resource)
-
-            elif line.startswith('@resource'):
-                lines = [line, ]
-                for no, line in ifile:
-                    line = line.strip()
-                    if line.startswith('@end'):
-                        try:
-                            self.add_device(Device.from_lines(lines, self.normalizer))
-                        except Exception as e:
-                            raise ValueError('Invalid definition in line %d' % no)
-                        break
-                    elif line.startswith('@resource'):
-                        raise ValueError('cannot nest @resource directives in line %d' % no)
-                    lines.append(line)
-
-            else:
-                raise ValueError('Invalid resource definition. Definitions lines outside resources.')
 
