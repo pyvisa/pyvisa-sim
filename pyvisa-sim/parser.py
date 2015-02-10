@@ -19,6 +19,8 @@ import yaml
 from .devices import Devices, Device
 
 
+SPEC_VERSION = '1.0'
+
 def _s(s):
     return s.strip(' ')
 
@@ -48,24 +50,32 @@ def _get_triplet(dd, default_error):
     return _s(dd['q']), _s(dd.get('r', '')), _s(dd.get('e', default_error))
 
 
+def _load(content_or_fp):
+    try:
+        data = yaml.load(content_or_fp, Loader=yaml.loader.BaseLoader)
+    except Exception as e:
+        raise Exception('Malformed yaml file:\n%r' % e)
+
+
+    if data['spec'] != SPEC_VERSION:
+        raise ValueError('The spec version of the file is '
+                         '%s but the loader is %s' % (data['spec'], SPEC_VERSION))
+
+    return data
+
+
 def parse_resource(file):
 
     with closing(pkg_resources.resource_stream(__name__, file)) as fp:
         rbytes = fp.read()
 
-    try:
-        return yaml.load(StringIO(rbytes.decode('utf-8')), Loader=yaml.loader.BaseLoader)
-    except Exception as e:
-        raise Exception('Malformed yaml file:\n%r' % e)
+    return _load(StringIO(rbytes.decode('utf-8')))
 
 
 def parse_file(file):
 
     with open(file, encoding='utf-8') as fp:
-        try:
-            return yaml.load(fp, Loader=yaml.loader.BaseLoader)
-        except Exception as e:
-            raise Exception('Malformed yaml file:\n%r' % e)
+        return _load(fp)
 
 
 def get_devices(filename, is_resource):
