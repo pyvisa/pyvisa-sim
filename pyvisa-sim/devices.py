@@ -21,6 +21,7 @@ from pyvisa import logger, constants
 from . import sessions
 from . import common
 
+
 def text_to_iter(val):
     """Takes a text message and return a tuple
 
@@ -110,7 +111,7 @@ class Device(object):
         #: Stores the queries accepted by the device.
         #: query: (response, error response)
         #: dict[tuple[bytes], tuple[bytes]]
-        self._queries = {}
+        self._dialogues = {}
 
         #: Maps property names to value, type, validator
         #: dict[str, (object, callable, callable)]
@@ -153,7 +154,7 @@ class Device(object):
         :param query: query string
         :param response: response string
         """
-        self._queries[text_to_iter(query)] = text_to_iter(response)
+        self._dialogues[text_to_iter(query)] = text_to_iter(response)
 
     def add_property(self, name, default_value, getter_pair, setter_triplet, specs):
         """Add property to device
@@ -221,39 +222,39 @@ class Device(object):
 
         self._input_buffer.clear()
 
-    def _match(self, part):
+    def _match(self, query):
         """Tries to match in dialogues, getters and setters
 
-        :param part: message tuple
-        :type part: Tuple[bytes]
-        :return: answer if found or None
+        :param query: message tuple
+        :type query: Tuple[bytes]
+        :return: response if found or None
         :rtype: Tuple[bytes] | None
         """
 
         # Try to match in the queries
         try:
-            answer = self._queries[part]
-            logger.debug('Found response in queries: %s' % repr(answer))
+            response = self._dialogues[query]
+            logger.debug('Found response in queries: %s' % repr(response))
 
-            return answer
+            return response
 
         except KeyError:
             pass
 
         # Now in the getters
         try:
-            name, answer = self._getters[part]
+            name, response = self._getters[query]
             logger.debug('Found response in getter of %s' % name)
 
-            return text_to_iter(answer.format(self._properties[name].value))
+            return text_to_iter(response.format(self._properties[name].value))
 
         except KeyError:
             pass
 
-        q = b''.join(part).decode('utf-8')
+        q = b''.join(query).decode('utf-8')
 
         # Finally in the setters, this will be slow.
-        for name, parser, answer, err in self._setters:
+        for name, parser, response, err in self._setters:
             try:
                 value = parser(q)
                 logger.debug('Found response in setter of %s' % name)
@@ -262,7 +263,7 @@ class Device(object):
 
             try:
                 self._properties[name].set(value)
-                return answer
+                return response
 
             except ValueError:
                 return err
