@@ -75,7 +75,9 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
 
         Corresponds to viOpen function of the VISA library.
 
-        :param session: Resource Manager session (should always be a session returned from open_default_resource_manager()).
+        :param session: Resource Manager session
+                        (should always be a session returned
+                        from open_default_resource_manager()).
         :param resource_name: Unique symbolic name of a resource.
         :param access_mode: Specifies the mode by which the resource is to be accessed. (constants.AccessModes)
         :param open_timeout: Specifies the maximum time period (in milliseconds) that this operation waits

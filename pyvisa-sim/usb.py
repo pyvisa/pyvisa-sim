@@ -36,7 +36,6 @@ class USBInstrumentSession(sessions.Session):
         self.attrs[constants.VI_ATTR_USB_SERIAL_NUM] = self.parsed['serial_number']
         self.attrs[constants.VI_ATTR_USB_INTFC_NUM] = int(self.parsed['board'])
 
-
     def read(self, count):
         end_char, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR)
         enabled, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR_EN)

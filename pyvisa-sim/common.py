@@ -72,6 +72,7 @@ _RESOURCE_CLASSES = ('INSTR', 'INTF', 'BACKPLANE', 'MEMACC', 'SOCKET', 'RAW', 'S
 #: (str, str) -> (str, *str) -> {}
 _SUBPARSER = {}
 
+
 def register_subparser(interface_type, resource_class):
     """Register a subparser for a given interface type and resource class.
 

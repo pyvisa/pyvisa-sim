@@ -61,7 +61,6 @@ def _load(content_or_fp):
     except Exception as e:
         raise Exception('Malformed yaml file:\n%r' % e)
 
-
     if data['spec'] != SPEC_VERSION:
         raise ValueError('The spec version of the file is '
                          '%s but the loader is %s' % (data['spec'], SPEC_VERSION))

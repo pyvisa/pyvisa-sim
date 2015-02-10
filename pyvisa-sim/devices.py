@@ -298,7 +298,7 @@ class Devices(object):
         """Bind device to resource name
         """
 
-        if not device.resource_name is None:
+        if device.resource_name is not None:
             raise ValueError('The device %r is already assigned to %s' % (device, device.resource_name))
 
         device.resource_name = resource_name
