@@ -9,17 +9,17 @@
     :license: MIT, see LICENSE for more details.
 """
 
-import stringparser
-
-from pyvisa import logger
-
 try:
     import Queue as queue
 except ImportError:
     import queue
 
-from . import sessions
+import stringparser
 
+from pyvisa import logger, constants
+
+from . import sessions
+from . import common
 
 def text_to_iter(val):
     """
@@ -77,7 +77,11 @@ class Device(object):
     :type name: str
     """
 
-    resource_name = None
+    # To be bound when adding the Device to Devices
+    _resource_name = None
+
+    _query_eom = None
+    _response_eom = None
 
     def __init__(self, name, error_response):
 
@@ -85,6 +89,11 @@ class Device(object):
         self.name = name
 
         self.error_response = text_to_iter(error_response)
+
+        #: Stores the specific end of messages for device.
+        #: TYPE CLASS -> (query termination, response termination)
+        #: dict[str, (str, str)]
+        self._eoms = {}
 
         #: Stores the queries accepted by the device.
         #: query: (response, error response)
@@ -97,12 +106,12 @@ class Device(object):
 
         #: Stores the getter queries accepted by the device.
         #: query: (property_name, response)
-        #: dict[tuple[bytes], [str, tuple[bytes]]]
+        #: dict[tuple[bytes], (str, tuple[bytes])]
         self._getters = {}
 
         #: Stores the setters queries accepted by the device.
         #: (property_name, string parser query, response, error response)
-        #: list[str, tuple[bytes], tuple[bytes], tuple[bytes]]]
+        #: list[(str, tuple[bytes], tuple[bytes], tuple[bytes]])]
         self._setters = []
 
         #: Buffer in which the user can read
@@ -112,6 +121,17 @@ class Device(object):
         #: Buffer in which the user can write
         #: [bytes]
         self._input_buffer = list()
+
+    @property
+    def resource_name(self):
+        return self._resource_name
+
+    @resource_name.setter
+    def resource_name(self, value):
+        p = common.parse_resource_name(value)
+        self._resource_name = p['canonical_resource_name']
+        self._query_eom, self._response_eom = self._eoms[(p['interface_type'],
+                                                          p['resource_class'])]
 
     def add_dialogue(self, query, response):
         self._queries[text_to_iter(query)] = text_to_iter(response)
@@ -128,6 +148,12 @@ class Device(object):
                               text_to_iter(response),
                               text_to_iter(error)))
 
+    def add_eom(self, type_class, query_termination, response_termination):
+        interface_type, resource_class = type_class.split(' ')
+        interface_type = getattr(constants.InterfaceType, interface_type.lower())
+        self._eoms[(interface_type, resource_class)] = (text_to_iter(query_termination),
+                                                        text_to_iter(response_termination))
+
     def write(self, data):
         """Write data into the device input buffer.
 
@@ -143,26 +169,30 @@ class Device(object):
 
         self._input_buffer.append(data)
 
-        # It would be better to call this only if an end of message is found.
-        # But we need to be careful with multiple messages in one.
-        answer = self._match_input_buffer()
+        l = len(self._query_eom)
+        if not tuple(self._input_buffer[-l:]) == self._query_eom:
+            return
+
+        input_tuple = tuple(self._input_buffer[:-l])
+        answer = self._match(input_tuple)
 
         if answer is None:
-            return
+            answer = self.error_response + self._response_eom
 
         for part in answer:
             self._output_buffer.put(part)
 
+        for part in self._response_eom:
+            self._output_buffer.put(part)
+
         self._input_buffer.clear()
 
-    def _match_input_buffer(self):
+    def _match(self, part):
         # After writing to the input buffer, tries to see if the query is in the
         # list of dialogues it understands and reply accordingly.
 
-        ib = tuple(self._input_buffer)
-
         try:
-            answer = self._queries[ib]
+            answer = self._queries[part]
             logger.debug('Found answer in queries: %s' % repr(answer))
 
             return answer
@@ -172,7 +202,7 @@ class Device(object):
 
         # Now in the getters
         try:
-            name, answer = self._getters[ib]
+            name, answer = self._getters[part]
             logger.debug('Found answer in getter of %s' % name)
 
             return text_to_iter(answer.format(self._properties[name].value))
@@ -180,7 +210,7 @@ class Device(object):
         except KeyError:
             pass
 
-        q = b''.join(self._input_buffer).decode('utf-8')
+        q = b''.join(part).decode('utf-8')
 
         # Finally in the setters, this will be slow.
         for name, parser, answer, err in self._setters:
@@ -218,11 +248,13 @@ class Devices(object):
     def add_device(self, resource_name, device):
         """Add device.
         """
+
         if not device.resource_name is None:
             raise ValueError('The device %r is already assigned to %s' % (device, device.resource_name))
 
-        self._internal[resource_name] = device
         device.resource_name = resource_name
+
+        self._internal[device.resource_name] = device
 
     def __getitem__(self, item):
         return self._internal[item]

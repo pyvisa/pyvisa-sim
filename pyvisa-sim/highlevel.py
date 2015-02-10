@@ -46,9 +46,9 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
 
         try:
             if self.library_path == 'unset':
-                self.devices = parser.get_devices('default.yaml', True, common.to_canonical_name)
+                self.devices = parser.get_devices('default.yaml', True)
             else:
-                self.devices = parser.get_devices(self.library_path, False, common.to_canonical_name)
+                self.devices = parser.get_devices(self.library_path, False)
         except Exception as e:
             raise Exception('Could not parse definitions file. %r' % e)
 

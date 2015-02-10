@@ -1,22 +1,26 @@
 devices:
   device 1:
+    eom:
+      ASRL INSTR:
+        q: \r\n
+        r: \n
     error: ERROR
     dialogues:
-      - q: "*IDN?\r\n"
-        r: Very Big Corporation of America, Jet Propulsor, SIM42, 4.2\n
-      - q: Life?\r\n
-        r: 42\n
-      - q: No answer\n
+      - q: "*IDN?"
+        r: Very Big Corporation of America, Jet Propulsor, SIM42, 4.2
+      - q: Life?
+        r: 42
+      - q: No answer
     properties:
       frequency:
         default: 100.0
         getter:
-          q: "FREQ?\r\n"
-          r: "{:.3f}\n"
+          q: "FREQ?"
+          r: "{:.3f}"
         setter:
-          q: FREQ {:.3f}\r\n
-          r: OK\n
-          e: ERROR\n
+          q: FREQ {:.3f}
+          r: OK
+          e: ERROR
         specs:
           min: 0
           max: 1000

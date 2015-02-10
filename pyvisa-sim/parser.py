@@ -16,15 +16,13 @@ from contextlib import closing
 import pkg_resources
 import yaml
 
-from pyvisa.compat import string_types
-
 from .devices import Devices, Device
 
 
 def _s(s):
     return s.strip(' ')
 
-def _get_pair(dd, default_error):
+def _get_pair(dd):
     """Return a pair from a dialogue dictionary.
 
     :param dd: Dialogue dictionary.
@@ -70,11 +68,7 @@ def parse_file(file):
             raise Exception('Malformed yaml file:\n%r' % e)
 
 
-def get_devices(filename, is_resource, normalizer):
-    """
-    :param normalizer: a callable the converts a VISA resource name into its normalized version.
-    :type normalizer: (str) -> str
-    """
+def get_devices(filename, is_resource):
 
     if is_resource:
         data = parse_resource(filename)
@@ -105,7 +99,7 @@ def get_devices(filename, is_resource, normalizer):
         else:
             device_dict = data['devices'][device_name]
 
-        devices.add_device(normalizer(resource_name),
+        devices.add_device(resource_name,
                            get_device(device_name, device_dict))
 
     return devices
@@ -116,13 +110,22 @@ def get_device(name, device_dict):
 
     device = Device(name, err)
 
-    for dia in device_dict.get('dialogues', ()):
-        device.add_dialogue(*_get_pair(dia, err))
+    for itype, eom_dict in device_dict.get('eom', {}).items():
+        device.add_eom(itype, *_get_pair(eom_dict))
 
-    for name, prop_dict in device_dict.get('properties', {}).items():
-        getter = _get_pair(prop_dict['getter'], err) if 'getter' in prop_dict else None
-        setter = _get_triplet(prop_dict['setter'], err) if 'setter' in prop_dict else None
-        device.add_property(name, prop_dict.get('default', ''),
-                            getter, setter, prop_dict.get('specs', {}))
+    for dia in device_dict.get('dialogues', ()):
+        try:
+            device.add_dialogue(*_get_pair(dia))
+        except Exception as e:
+            raise Exception('In device %s, malformed dialogue %s\n%r' % (name, dia, e))
+
+    for prop_name, prop_dict in device_dict.get('properties', {}).items():
+        try:
+            getter = _get_pair(prop_dict['getter']) if 'getter' in prop_dict else None
+            setter = _get_triplet(prop_dict['setter'], err) if 'setter' in prop_dict else None
+            device.add_property(prop_name, prop_dict.get('default', ''),
+                                getter, setter, prop_dict.get('specs', {}))
+        except Exception as e:
+            raise Exception('In device %s, malformed property %s\n%r' % (name, prop_name, e))
 
     return device
