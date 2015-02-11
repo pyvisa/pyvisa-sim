@@ -52,11 +52,9 @@ or install the development version:
 
     $ pip install -U https://github.com/hgrecco/pyvisa-sim/zipball/master
 
-Until PyVISA 1.6 is on PyPI, you will need to install the dev version manually:
+PyVISA is automatically installed if needed.
 
-    $ pip install -U https://github.com/hgrecco/pyvisa/zipball/master
-
-Documentation (not ready yet)
------------------------------
+Documentation
+-------------
 
 The documentation can be read online at https://pyvisa-sim.readthedocs.org
