@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from pyvisa.compat import unittest
+from pyvisa.testsuite import BaseTestCase
 import visa
 
 
-class TestAll(unittest.TestCase):
+class TestAll(BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
