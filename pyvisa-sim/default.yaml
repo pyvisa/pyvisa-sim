@@ -5,6 +5,15 @@ devices:
       ASRL INSTR:
         q: "\r\n"
         r: "\n"
+      USB INSTR:
+        q: "\n"
+        r: "\n"
+      TCPIP INSTR:
+        q: "\n"
+        r: "\n"
+      GPIB INSTR:
+        q: "\n"
+        r: "\n"
     error: ERROR
     dialogues:
       - q: "?IDN"
@@ -74,4 +83,9 @@ devices:
 resources:
   ASRL1::INSTR:
     device: device 1
-
+  USB::0x1111::0x2222::0x1234::INSTR:
+    device: device 1
+  TCPIP::localhost::INSTR:
+    device: device 1
+  GPIB::8::INSTR:
+    device: device 1
