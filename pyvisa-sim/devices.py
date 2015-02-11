@@ -224,7 +224,7 @@ class Device(object):
         self._output_buffer.extend(response)
         self._output_buffer.extend(eom)
 
-        self._input_buffer.clear()
+        self._input_buffer = bytearray()
 
     def _match(self, query):
         """Tries to match in dialogues, getters and setters
@@ -250,7 +250,7 @@ class Device(object):
             name, response = self._getters[query]
             logger.debug('Found response in getter of %s' % name)
 
-            return bytes(response.format(self._properties[name].value), encoding='utf-8')
+            return response.format(self._properties[name].value).encode('utf-8')
 
         except KeyError:
             pass
