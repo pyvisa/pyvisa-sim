@@ -23,7 +23,7 @@ devices
 =======
 
 It is a dictionary that defines each device, its dialogues and properties. The keys of this
-dictionary are the device names and must be unique within this file. For example:>
+dictionary are the device names and must be unique within this file. For example::
 
     devices:
         HP33120A:
@@ -122,7 +122,7 @@ Finally you can specify the specs of the property::
           type: float
 
 You can define the minimum (min) and maximum (max) values, the type of the value (float, int)
-You can also specify the valid values, for example:
+You can also specify the valid values, for example::
 
         specs:
           valid: [1, 3, 5]
