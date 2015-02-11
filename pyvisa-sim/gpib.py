@@ -49,9 +49,6 @@ class GPIBInstrumentSession(sessions.Session):
             finally:
                 now = time.time()
 
-            if last == sessions.EOM4882:
-                return out, constants.StatusCode.success
-
             out += last
 
             if enabled:
@@ -70,4 +67,5 @@ class GPIBInstrumentSession(sessions.Session):
             self.device.write(data[i:i+1])
 
         if send_end:
-            self.device.write(sessions.EOM4882)
+            # EOM4882
+            pass

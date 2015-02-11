@@ -3,7 +3,8 @@
     pyvisa-sim.common
     ~~~~~~~~~~~~~~~~~
 
-    Common code.
+    This code is currently taken from PyVISA-py.
+    Do not edit here.
 
     :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
     :license: MIT, see LICENSE for more details.
@@ -70,6 +71,7 @@ _RESOURCE_CLASSES = ('INSTR', 'INTF', 'BACKPLANE', 'MEMACC', 'SOCKET', 'RAW', 'S
 
 #: (str, str) -> (str, *str) -> {}
 _SUBPARSER = {}
+
 
 def register_subparser(interface_type, resource_class):
     """Register a subparser for a given interface type and resource class.

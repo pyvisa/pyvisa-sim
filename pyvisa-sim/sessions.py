@@ -21,15 +21,6 @@ from pyvisa import constants, attributes, logger
 from . import common
 
 
-class SpecialByte(common.NamedObject):
-
-    def __len__(self):
-        return 1
-
-
-EOM4882 = SpecialByte('EOM4882')
-
-
 class Session(object):
     """A base class for Session objects.
 
@@ -90,33 +81,56 @@ class Session(object):
         #: devices.Device
         self.device = None
 
-
     def after_parsing(self):
+        """Override in derived class to be executed after the resource name has
+        been parsed and the attr dictionary has been filled.
+        """
         pass
 
     def get_attribute(self, attribute):
+        """Get an attribute from the session.
+
+        :param attribute:
+        :return: attribute value, status code
+        :rtype: object, constants.StatusCode
+        """
+
+        # Check that the attribute exists.
         try:
             attr = attributes.AttributesByID[attribute]
         except KeyError:
             return 0, constants.StatusCode.error_nonsupported_attribute
 
+        # Check that the attribute is valid for this session type.
         if not attr.in_resource(self.session_type):
             return 0, constants.StatusCode.error_nonsupported_attribute
 
+        # Check that the attribute is readable.
         if not attr.read:
             raise Exception('Do not now how to handle write only attributes.')
 
+        # Return the current value of the default according the VISA spec
         return self.attrs.setdefault(attribute, attr.default), constants.StatusCode.success
 
     def set_attribute(self, attribute, attribute_state):
+        """Get an attribute from the session.
+
+        :param attribute:
+        :return: attribute value, status code
+        :rtype: object, constants.StatusCode
+        """
+
+        # Check that the attribute exists.
         try:
             attr = attributes.AttributesByID[attribute]
         except KeyError:
             return constants.StatusCode.error_nonsupported_attribute
 
+        # Check that the attribute is valid for this session type.
         if not attr.in_resource(self.session_type):
             return constants.StatusCode.error_nonsupported_attribute
 
+        # Check that the attribute is writable.
         if not attr.write:
             return constants.StatusCode.error_attribute_read_only
 

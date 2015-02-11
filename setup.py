@@ -28,7 +28,7 @@ long_description = '\n\n'.join([read('README'),
 
 __doc__ = long_description
 
-requirements = ['pyvisa>1.5']
+requirements = ['stringparser', 'pyvisa>1.5', 'pyyaml']
 
 setup(name='PyVISA-sim',
       description='Simulated backend for PyVISA implementing TCPIP, GPIB, RS232, and USB resources',
@@ -54,7 +54,6 @@ setup(name='PyVISA-sim',
         'Programming Language :: Python',
         'Topic :: Scientific/Engineering :: Interface Engine/Protocol Translator',
         'Topic :: Software Development :: Libraries :: Python Modules',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
@@ -62,6 +61,9 @@ setup(name='PyVISA-sim',
         ],
       packages=['pyvisa-sim', 
                 'pyvisa-sim.testsuite'],
+      package_data={
+          'pyvisa-sim': ['default.yaml']
+      },
       platforms="Linux, Windows,Mac",
       use_2to3=False,
       zip_safe=False)

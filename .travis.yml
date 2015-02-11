@@ -1,0 +1,18 @@
+language: python
+
+python:
+  - "2.7"
+  - "3.2"
+  - "3.3"
+  - "3.4"
+
+install:
+  - pip install coverage coveralls
+
+script:
+  - python -bb -m coverage run -p --source=pyvisa-sim --omit="*test*" setup.py test
+  - coverage combine
+  - coverage report -m
+
+after_script:
+  - coveralls --verbose

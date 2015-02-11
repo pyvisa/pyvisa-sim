@@ -16,7 +16,7 @@ import random
 from pyvisa import constants, highlevel
 
 from . import common
-from . import devices
+from . import parser
 from . import sessions
 
 # This import is required to register subclasses
@@ -44,10 +44,13 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         #: dict[int, SessionSim]
         self.sessions = {}
 
-        if self.library_path == 'unset':
-            self.devices = devices.Devices(devices.DEFAULT, common.to_canonical_name)
-        else:
-            self.devices = devices.Devices(self.library_path, common.to_canonical_name)
+        try:
+            if self.library_path == 'unset':
+                self.devices = parser.get_devices('default.yaml', True)
+            else:
+                self.devices = parser.get_devices(self.library_path, False)
+        except Exception as e:
+            raise Exception('Could not parse definitions file. %r' % e)
 
     def _register(self, obj):
         """Creates a random but unique session handle for a session object,
@@ -72,7 +75,9 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
 
         Corresponds to viOpen function of the VISA library.
 
-        :param session: Resource Manager session (should always be a session returned from open_default_resource_manager()).
+        :param session: Resource Manager session
+                        (should always be a session returned
+                        from open_default_resource_manager()).
         :param resource_name: Unique symbolic name of a resource.
         :param access_mode: Specifies the mode by which the resource is to be accessed. (constants.AccessModes)
         :param open_timeout: Specifies the maximum time period (in milliseconds) that this operation waits
@@ -272,3 +277,10 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
 
         return sess.set_attribute(attribute, attribute_state)
 
+    def disable_event(self, session, event_type, mechanism):
+        # TODO: implement this for GPIB finalization
+        pass
+
+    def discard_events(self, session, event_type, mechanism):
+        # TODO: implement this for GPIB finalization
+        pass

@@ -1,0 +1,91 @@
+spec: "1.0"
+devices:
+  device 1:
+    eom:
+      ASRL INSTR:
+        q: "\r\n"
+        r: "\n"
+      USB INSTR:
+        q: "\n"
+        r: "\n"
+      TCPIP INSTR:
+        q: "\n"
+        r: "\n"
+      GPIB INSTR:
+        q: "\n"
+        r: "\n"
+    error: ERROR
+    dialogues:
+      - q: "?IDN"
+        r: "LSG Serial #1234"
+      - q: "!CAL"
+        r: OK
+    properties:
+      frequency:
+        default: 100.0
+        getter:
+          q: "?FREQ"
+          r: "{:.2f}"
+        setter:
+          q: "!FREQ {:.2f}"
+          r: OK
+        specs:
+          min: 1
+          max: 100000
+          type: float
+      amplitude:
+        default: 1.0
+        getter:
+          q: "?AMP"
+          r: "{:.2f}"
+        setter:
+          q: "!AMP {:.2f}"
+          r: OK
+        specs:
+          min: 0
+          max: 10
+          type: float
+      offset:
+        default: 0
+        getter:
+          q: "?OFF"
+          r: "{:.2f}"
+        setter:
+          q: "!OFF {:.2f}"
+          r: OK
+        specs:
+          min: 0
+          max: 10
+          type: float
+      output_enabled:
+        default: 0
+        getter:
+          q: "?OUT"
+          r: "{:d}"
+        setter:
+          q: "!OUT {:d}"
+          r: OK
+        specs:
+          valid: [0, 1]
+          type: int
+      waveform:
+        default: 0
+        getter:
+          q: "?WVF"
+          r: "{:d}"
+        setter:
+          q: "!WVF {:d}"
+          r: OK
+        specs:
+          valid: [0, 1, 2, 3]
+          type: int
+
+resources:
+  ASRL1::INSTR:
+    device: device 1
+  USB::0x1111::0x2222::0x1234::INSTR:
+    device: device 1
+  TCPIP::localhost::INSTR:
+    device: device 1
+  GPIB::8::INSTR:
+    device: device 1

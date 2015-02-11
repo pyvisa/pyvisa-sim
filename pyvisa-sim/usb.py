@@ -36,7 +36,6 @@ class USBInstrumentSession(sessions.Session):
         self.attrs[constants.VI_ATTR_USB_SERIAL_NUM] = self.parsed['serial_number']
         self.attrs[constants.VI_ATTR_USB_INTFC_NUM] = int(self.parsed['board'])
 
-
     def read(self, count):
         end_char, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR)
         enabled, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR_EN)
@@ -54,9 +53,6 @@ class USBInstrumentSession(sessions.Session):
                 continue
             finally:
                 now = time.time()
-
-            if last == sessions.EOM4882:
-                return out, constants.StatusCode.success
 
             out += last
 
@@ -76,4 +72,5 @@ class USBInstrumentSession(sessions.Session):
             self.device.write(data[i:i+1])
 
         if send_end:
-            self.device.write(sessions.EOM4882)
+            # EOM 4882
+            pass
