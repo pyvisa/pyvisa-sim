@@ -277,3 +277,10 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
 
         return sess.set_attribute(attribute, attribute_state)
 
+    def disable_event(self, session, event_type, mechanism):
+        # TODO: implement this for GPIB finalization
+        pass
+
+    def discard_events(self, session, event_type, mechanism):
+        # TODO: implement this for GPIB finalization
+        pass
