@@ -31,12 +31,9 @@ You can write your own simulators. See :ref:`definitions` to find out how.
 Installation
 ============
 
-Right now, you can only install from GitHub
+Using pip::
 
-    pip install https://github.com/hgrecco/pyvisa-sim/zipball/master
-
-We will release a version in PyPI as soon as we implement a few more features.
-
+    pip install -U pyvisa-sim
 
 You can report a problem or ask for features in the `issue tracker`_.
 
