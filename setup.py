@@ -32,7 +32,7 @@ requirements = ['stringparser', 'pyvisa>1.5', 'pyyaml']
 
 setup(name='PyVISA-sim',
       description='Simulated backend for PyVISA implementing TCPIP, GPIB, RS232, and USB resources',
-      version='0.1.dev0',
+      version='0.1',
       long_description=long_description,
       author='Hernan E. Grecco',
       author_email='hernan.grecco@gmail.com',
