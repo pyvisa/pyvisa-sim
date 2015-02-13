@@ -111,20 +111,20 @@ def get_devices(filename, is_resource):
         device_name = resource_dict['device']
 
         new_filename = resource_dict.get('filename', None)
-        new_is_resource = resource_dict.get('is_resource', False)
+        new_bundled = resource_dict.get('bundled', False)
 
         if new_filename:
             # If the device definition should be loaded from another file
             if new_filename not in devices_in_file:
-                if new_is_resource:
+                if new_bundled:
                     new_data = parse_resource(new_filename)
                 else:
                     path = os.path.dirname(filename)
                     new_data = parse_file(os.path.join(path, os.path.normpath(new_filename)))
 
-                devices_in_file[(new_filename, is_resource)] = new_data['devices']
+                devices_in_file[(new_filename, new_bundled)] = new_data['devices']
 
-            device_dict = devices_in_file[(new_filename, is_resource)][device_name]
+            device_dict = devices_in_file[(new_filename, new_bundled)][device_name]
         else:
             device_dict = data['devices'][device_name]
 
