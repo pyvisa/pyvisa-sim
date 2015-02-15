@@ -1,6 +1,5 @@
 .. _definitions:
 
-=======================================
 Building your own simulated instruments
 =======================================
 
@@ -20,7 +19,7 @@ The rest of the file can be divided in two sections: devices and resources. We w
 you through describing the `Lantz Example Driver`_
 
 devices
-=======
+-------
 
 It is a dictionary that defines each device, its dialogues and properties. The keys of this
 dictionary are the device names which must be unique within this file. For example::
@@ -35,7 +34,7 @@ The device definition is a dictionary with the following keys:
 
 
 eom
----
+~~~
 
 Specifies the end-of-message for each instrument type and resource class pair.
 For example::
@@ -54,7 +53,7 @@ selected when a device is assigned to a resource, as we will see later.
 
 
 error
------
+~~~~~
 
 The error key specifies the default message to be given when a message is not understood
 or the user tries to set a property outside the right range. For example::
@@ -65,7 +64,7 @@ This means that the word **ERROR** is returned.
 
 
 dialogues
----------
+~~~~~~~~~
 
 This is one of the main concepts of PyVISA-sim. A dialogue is a query which may be followed
 by a response. The dialogues item is a list of elements, normally **q**, **r** pairs. Fore example::
@@ -80,7 +79,7 @@ You can have as many items as you want.
 
 
 properties
-----------
+~~~~~~~~~~
 
 This is the other important part of the device. Consider it as a dialogue with some memory. It is
 a dictionary. The key is the name of the property and the value is the property definition.
@@ -128,6 +127,39 @@ You can also specify the valid values, for example::
           valid: [1, 3, 5]
 
 Notice that even if the type is a float, the communication is done with strings.
+
+
+resources
+---------
+
+It is a dictionary that binds resource names to device types. The keys of this
+dictionary are the resource names which must be unique within this file. For example::
+
+    resources:
+        ASRL1::INSTR:
+            device: device 1
+        USB::0x1111::0x2222::0x1234::INSTR:
+            device: device 1
+
+Within each resource, the type is specified under the **device** key. The associated value
+(e.g **device 1**) must corresponds to one of the keys in the **devices** dictionary that
+is explained above. Notice that the same device type can be bound to different resource names,
+creating two different objects of the same type.
+
+You can also bind a resource name to device defined in another file. Simply do::
+
+        ASRL3::INSTR:
+            device: device 1
+            filename: myfile.yaml
+
+The path can specified in relation with the current file or in an absolute way.
+
+If you want to use a file which is bundled with PyVISA-sim, just write::
+
+        ASRL3::INSTR:
+            device: device 1
+            filename: default.yaml
+            bundled: true
 
 
 .. _YAML: http://en.wikipedia.org/wiki/YAML

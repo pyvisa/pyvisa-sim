@@ -42,3 +42,11 @@ You can report a problem or ask for features in the `issue tracker`_.
 .. _GitHub: https://github.com/hgrecco/pyvisa-sim
 .. _`issue tracker`: https://github.com/hgrecco/pyvisa-sim/issues
 
+
+User Guide
+----------
+
+.. toctree::
+    :maxdepth: 1
+
+    definitions
