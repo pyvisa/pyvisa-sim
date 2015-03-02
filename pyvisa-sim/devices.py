@@ -45,7 +45,7 @@ class Property(object):
 
         t = specs.get('type', None)
         if t:
-            for key, val in (('float', float), ('int', int)):
+            for key, val in (('float', float), ('int', int), ('str', str)):
                 if t == key:
                     t = specs['type'] = val
                     break
