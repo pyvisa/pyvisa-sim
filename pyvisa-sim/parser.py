@@ -141,7 +141,7 @@ def get_device(name, device_dict):
     :param device_dict: device dictionary
     :rtype: Device
     """
-    err = device_dict.get('error', NoResponse)
+    err = device_dict.get('error', '')
 
     device = Device(name, err)
 
