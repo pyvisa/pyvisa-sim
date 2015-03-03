@@ -22,6 +22,8 @@ from .devices import Devices, Device, NoResponse, is_str
 #: Version of the specification
 SPEC_VERSION = '1.0'
 
+SPEC_VERSION_TUPLE = (map(int, (SPEC_VERSION.split("."))))
+
 
 def _s(s):
     """Strip white spaces
@@ -63,9 +65,21 @@ def _load(content_or_fp):
     except Exception as e:
         raise Exception('Malformed yaml file:\n%r' % e)
 
-    if data['spec'] != SPEC_VERSION:
+    try:
+        ver = data['spec']
+    except:
+        raise ValueError('The file does not specify a spec version')
+
+    try:
+        ver = tuple(map(int, (ver.split("."))))
+    except:
+        raise ValueError("Invalid spec version format. Expect 'X.Y'"
+                         " (X and Y integers), found %s" % ver)
+
+    if ver > SPEC_VERSION_TUPLE:
         raise ValueError('The spec version of the file is '
-                         '%s but the loader is %s' % (data['spec'], SPEC_VERSION))
+                         '%s but the parser is %s. '
+                         'Please update pyvisa-sim.' % (ver, SPEC_VERSION))
 
     return data
 
