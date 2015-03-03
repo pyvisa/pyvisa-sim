@@ -16,7 +16,7 @@ except ImportError:
 
 import stringparser
 
-from pyvisa import logger, constants
+from pyvisa import logger, constants, errors
 
 from . import common
 
@@ -28,6 +28,26 @@ def to_bytes(val):
     val = val.replace('\\r', '\r').replace('\\n', '\n')
     return val.encode()
 
+
+class NoResponse(object):
+    """Sentinel used for when there should not be a response to a query
+    """
+    
+    def replace(self, *args):
+        """Needed to emulate calls for to_bytes method
+        """
+        return self
+
+    def encode(self):
+        """Needed to emulate calls for to_bytes method
+        """
+        return self
+    
+    def strip(self, *args):
+        """Needed to emulate calls for to_bytes method
+        """
+        return self
+    
 
 class Property(object):
     """A device property
@@ -221,8 +241,11 @@ class Device(object):
         if response is None:
             response = self.error_response
 
-        self._output_buffer.extend(response)
-        self._output_buffer.extend(eom)
+        if isinstance(response, NoResponse):
+            self._output_buffer = bytearray()
+        else:
+            self._output_buffer.extend(response)
+            self._output_buffer.extend(eom)
 
         self._input_buffer = bytearray()
 
@@ -277,6 +300,9 @@ class Device(object):
     def read(self):
         """Return a single byte from the output buffer
         """
+        if isinstance(self._output_buffer, NoResponse):
+            self._output_buffer = bytearray()
+            raise errors.VisaIOError(VI_ERROR_TMO)
         if self._output_buffer:
             b, self._output_buffer = self._output_buffer[0:1], self._output_buffer[1:]
             return b
