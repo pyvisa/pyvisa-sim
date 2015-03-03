@@ -16,7 +16,7 @@ from contextlib import closing
 import pkg_resources
 import yaml
 
-from .devices import Devices, Device
+from .devices import Devices, Device, NoResponse
 
 
 #: Version of the specification
@@ -37,7 +37,7 @@ def _get_pair(dd):
     :return: (query, response)
     :rtype: (str, str)
     """
-    return _s(dd['q']), _s(dd.get('r', ''))
+    return _s(dd['q']), _s(dd.get('r', NoResponse()))
 
 
 def _get_triplet(dd, default_error):
@@ -50,7 +50,7 @@ def _get_triplet(dd, default_error):
     :return: (query, response, error response)
     :rtype: (str, str, str)
     """
-    return _s(dd['q']), _s(dd.get('r', '')), _s(dd.get('e', default_error))
+    return _s(dd['q']), _s(dd.get('r', NoResponse())), _s(dd.get('e', default_error))
 
 
 def _load(content_or_fp):
