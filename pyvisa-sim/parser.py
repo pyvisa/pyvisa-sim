@@ -16,17 +16,20 @@ from contextlib import closing
 import pkg_resources
 import yaml
 
-from .devices import Devices, Device, NoResponse
+from .devices import Devices, Device, NoResponse, ErrorResponse
 
 
 #: Version of the specification
 SPEC_VERSION = '1.0'
 
 
+
 def _s(s):
     """Strip white spaces
     """
-    return s.strip(' ')
+    if type(s) == str:
+        return s.strip(' ')
+    return s
 
 
 def _get_pair(dd):
@@ -141,9 +144,25 @@ def get_device(name, device_dict):
     :param device_dict: device dictionary
     :rtype: Device
     """
-    err = device_dict.get('error', '')
+    err = device_dict.get('error', {})
+    
+    if type(err) == str:
+        error_response = ErrorResponse.parse_error(err)
+        error_dict = {
+            'invalid_write': error_response,
+            'unexpected_read': error_response,
+            }
+    elif type(err) == dict:
+        error_dict = {
+            'invalid_write': ErrorResponse.parse_error(
+                err.get('invalid_write', NoResponse())
+                ),
+            'unexpected_read': ErrorResponse.parse_error(
+                err.get('unexpected_read', NoResponse())
+                ),
+            }
 
-    device = Device(name, err)
+    device = Device(name, error_dict)
 
     for itype, eom_dict in device_dict.get('eom', {}).items():
         device.add_eom(itype, *_get_pair(eom_dict))
@@ -157,7 +176,7 @@ def get_device(name, device_dict):
     for prop_name, prop_dict in device_dict.get('properties', {}).items():
         try:
             getter = _get_pair(prop_dict['getter']) if 'getter' in prop_dict else None
-            setter = _get_triplet(prop_dict['setter'], err) if 'setter' in prop_dict else None
+            setter = _get_triplet(prop_dict['setter'], error_dict.get('invalid_write')) if 'setter' in prop_dict else None
             device.add_property(prop_name, prop_dict.get('default', ''),
                                 getter, setter, prop_dict.get('specs', {}))
         except Exception as e:
