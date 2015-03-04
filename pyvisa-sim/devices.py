@@ -154,6 +154,7 @@ class ErrorResponse(object):
                 return cls(error_input)
             elif 'null_response' in error_input:
                 return NoResponse()
+            return error_input
         else:
             return error_input
 
