@@ -29,6 +29,7 @@ devices:
         setter:
           q: "!FREQ {:.2f}"
           r: OK
+          e: 'FREQ_ERROR'
         specs:
           min: 1
           max: 100000
@@ -179,6 +180,7 @@ devices:
           r: "{:+.8E}"
         setter:
           q: ":VOLT:IMM:AMPL {:.3f}"
+          e: raise VisaIOError(VI_ERROR_TMO)
         specs:
           min: 1
           max: 6

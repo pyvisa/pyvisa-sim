@@ -42,7 +42,7 @@ def _get_pair(dd):
     return _s(dd['q']), _s(dd.get('r', NoResponse()))
 
 
-def _get_triplet(dd, default_error):
+def _get_triplet(dd):
     """Return a triplet from a dialogue dictionary.
 
     :param dd: Dialogue dictionary.
@@ -52,7 +52,7 @@ def _get_triplet(dd, default_error):
     :return: (query, response, error response)
     :rtype: (str, str, str)
     """
-    return _s(dd['q']), _s(dd.get('r', NoResponse())), _s(dd.get('e', default_error))
+    return _s(dd['q']), _s(dd.get('r', NoResponse())), _s(dd.get('e'))
 
 
 def _load(content_or_fp):
@@ -160,7 +160,7 @@ def get_device(name, device_dict):
     for prop_name, prop_dict in device_dict.get('properties', {}).items():
         try:
             getter = _get_pair(prop_dict['getter']) if 'getter' in prop_dict else None
-            setter = _get_triplet(prop_dict['setter'], default_error) if 'setter' in prop_dict else None
+            setter = _get_triplet(prop_dict['setter']) if 'setter' in prop_dict else None
             device.add_property(prop_name, prop_dict.get('default', ''),
                                 getter, setter, prop_dict.get('specs', {}))
         except Exception as e:

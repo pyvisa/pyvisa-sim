@@ -68,7 +68,8 @@ class ErrorResponse(object):
         constants_dir['VisaIOError'] = VisaIOError
         constants_dir['VisaIOWarning'] = VisaIOWarning
         constants_dir['__builtins__'] = None
-        self._exception = eval(exception_str, self.EVAL_GLOBALS, constants_dir)
+        exception = eval(exception_str, self.EVAL_GLOBALS, constants_dir)
+        self._exception = exception
     
     def raise_exception(self):
         raise self._exception
@@ -299,10 +300,11 @@ class Device(object):
         self._getters[to_bytes(query)] = name, response
 
         query, response, error = setter_triplet
+        error_response = ErrorResponse.parse_error(error)
         self._setters.append((name,
                               stringparser.Parser(query),
                               to_bytes(response),
-                              to_bytes(error)))
+                              to_bytes(error_response)))
 
     def add_eom(self, type_class, query_termination, response_termination):
         """Add default end of message for a given interface type and resource class.
@@ -335,22 +337,24 @@ class Device(object):
         if not self._input_buffer.endswith(self._query_eom):
             return
 
-        query = bytes(self._input_buffer[:-l])
-        response = self._match(query)
-        eom = self._response_eom
+        try:
+            query = bytes(self._input_buffer[:-l])
+            response = self._match(query)
+            eom = self._response_eom
 
-        if response is None:
-            response = self.error_response('command_error')
+            if response is None:
+                response = self.error_response('command_error')
 
-        if isinstance(response, NoResponse):
-            self._output_buffer = bytearray()
-        elif isinstance(response, ErrorResponse):
-            response.raise_exception()
-        else:
-            self._output_buffer.extend(response)
-            self._output_buffer.extend(eom)
+            if isinstance(response, NoResponse):
+                self._output_buffer = bytearray()
+            elif isinstance(response, ErrorResponse):
+                response.raise_exception()
+            else:
+                self._output_buffer.extend(response)
+                self._output_buffer.extend(eom)
 
-        self._input_buffer = bytearray()
+        finally:
+            self._input_buffer = bytearray()
 
     def _match(self, query):
         """Tries to match in dialogues, getters and setters
@@ -397,7 +401,7 @@ class Device(object):
         q = query.decode('utf-8')
 
         # Finally in the setters, this will be slow.
-        for name, parser, response, err in self._setters:
+        for name, parser, response, error_response in self._setters:
             try:
                 value = parser(q)
                 logger.debug('Found response in setter of %s' % name)
@@ -407,9 +411,12 @@ class Device(object):
             try:
                 self._properties[name].set_value(value)
                 return response
-
             except ValueError:
-                return err
+                if isinstance(error_response, bytes):
+                    return error_response
+                elif isinstance(error_response, ErrorResponse):
+                    error_response.raise_exception()
+                return self.error_response('command_error')
 
         return None
 

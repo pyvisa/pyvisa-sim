@@ -43,14 +43,28 @@ class TestAll(BaseTestCase):
             32,
             'invalid command test'
             )
-        with self.assertRaises(VisaIOError):
+        with self.assertRaises(VisaIOError, msg='Unexpected read - exception'):
             inst.write(':VOLT:IMM:AMPL 2.00')
             inst.read()
         status_reg = inst.query('*ESR?')
         self.assertEqual(
             int(status_reg),
             4,
-            'unexpected read test'
+            'unexpected read - status '
+            )
+        inst.write(':VOLT:IMM:AMPL 0.5')
+        status_reg = inst.query('*ESR?')
+        self.assertEqual(
+            int(status_reg),
+            32,
+            'invalid range test - <min'
+            )
+        inst.write(':VOLT:IMM:AMPL 6.5')
+        status_reg = inst.query('*ESR?')
+        self.assertEqual(
+            int(status_reg),
+            32,
+            'invalid range test - >max'
             )
 
     def test_device_3(self):
@@ -79,6 +93,8 @@ class TestAll(BaseTestCase):
             4,
             'unexpected read test - status'
             )
+        with self.assertRaises(VisaIOError, msg='invalid range write - raise'):
+            inst.write(':VOLT:IMM:AMPL 0.5')
 
     def _test(self, inst, a, b):
         self.assertEqual(inst.query(a), b, msg=inst.resource_name + ', %r == %r' % (a, b))
@@ -113,6 +129,9 @@ class TestAll(BaseTestCase):
         # Errors
 
         self._test(inst, '!WVF 23', 'ERROR')
+        self._test(inst, '!AMP -1.0', 'ERROR')
+        self._test(inst, '!AMP 11.0', 'ERROR')
+        self._test(inst, '!FREQ 0.0', 'FREQ_ERROR')
         self._test(inst, 'BOGUS_COMMAND', 'ERROR')
 
         inst.close()
