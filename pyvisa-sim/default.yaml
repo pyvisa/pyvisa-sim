@@ -213,9 +213,6 @@ devices:
           r: "{:d}"
         setter:
           q: "OUTP {:d}"
-        specs:
-          valid: [0, 1]
-          type: int
 
 resources:
   ASRL1::INSTR:

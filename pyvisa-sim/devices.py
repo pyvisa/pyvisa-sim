@@ -347,8 +347,6 @@ class Device(object):
 
             if isinstance(response, NoResponse):
                 self._output_buffer = bytearray()
-            elif isinstance(response, ErrorResponse):
-                response.raise_exception()
             else:
                 self._output_buffer.extend(response)
                 self._output_buffer.extend(eom)
@@ -366,37 +364,27 @@ class Device(object):
         """
 
         # Try to match in the queries
-        try:
+        if query in self._dialogues:
             response = self._dialogues[query]
             logger.debug('Found response in queries: %s' % repr(response))
 
             return response
 
-        except KeyError:
-            pass
-
         # Now in the getters
-        try:
+        if query in self._getters:
             name, response = self._getters[query]
             logger.debug('Found response in getter of %s' % name)
 
             return response.format(self._properties[name].value).encode('utf-8')
 
-        except KeyError:
-            pass
-
         # Try to match in the status registers
-        try:
-            if query in self._status_registers:
-                register = self._status_registers[query]
-                response = register.value
-                logger.debug('Found response in status register: %s' % repr(response))
-                register.clear()
+        if query in self._status_registers:
+            register = self._status_registers[query]
+            response = register.value
+            logger.debug('Found response in status register: %s' % repr(response))
+            register.clear()
 
-                return response
-
-        except KeyError:
-            pass
+            return response
 
         q = query.decode('utf-8')
 
