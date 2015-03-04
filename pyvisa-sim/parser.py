@@ -16,18 +16,17 @@ from contextlib import closing
 import pkg_resources
 import yaml
 
-from .devices import Devices, Device, NoResponse
+from .devices import Devices, Device, NoResponse, is_str
 
 
 #: Version of the specification
 SPEC_VERSION = '1.0'
 
 
-
 def _s(s):
     """Strip white spaces
     """
-    if type(s) == str:
+    if is_str(s):
         return s.strip(' ')
     return s
 

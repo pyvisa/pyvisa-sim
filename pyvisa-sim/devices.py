@@ -16,17 +16,38 @@ except ImportError:
     import queue
 
 import stringparser
+import sys
 
 from pyvisa import logger, constants 
 
 from . import common
 
 
+PY2 = sys.version_info[0] == 2
+PY3 = sys.version_info[0] == 3
+
+
+if PY3:
+    string_types = str,
+    text_type = str
+    binary_type = bytes
+else:
+    string_types = basestring,
+    text_type = unicode
+    binary_type = str
+
+
+def is_str(input_value):
+    """Do string type checking across versions of Python
+    """
+    return isinstance(input_value, string_types)
+
+
 def to_bytes(val):
     """Takes a text message and return a tuple
 
     """
-    if type(val) in (bytes, str):
+    if type(val) in (text_type, binary_type):
         val = val.replace('\\r', '\r').replace('\\n', '\n')
         return val.encode()
     return val
@@ -54,7 +75,7 @@ class ErrorResponse(object):
 
     @classmethod
     def parse_error(cls, error_input):
-        if type(error_input) is str:
+        if is_str(error_input):
             if 'raise' in error_input:
                 return cls(error_input)
             elif 'null_response' in error_input:
@@ -221,7 +242,7 @@ class Device(object):
         """Add error handler to the device
         """
         response_dict = {}
-        if type(error_input) == str:
+        if is_str(error_input):
             error_response = ErrorResponse.parse_error(error_input)
             response_dict = {
                 'command_error': error_response,
