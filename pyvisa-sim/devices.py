@@ -272,7 +272,8 @@ class Device(object):
         return response_dict['command_error']
     
     def error_response(self, error_key):
-        self._error_map[error_key].set(error_key)
+        if error_key in self._error_map:
+            self._error_map[error_key].set(error_key)
         return self._error_response.get(error_key)
 
     def add_dialogue(self, query, response):

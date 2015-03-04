@@ -85,6 +85,7 @@ class TestAll(BaseTestCase):
         # Errors
 
         self._test(inst, '!WVF 23', 'ERROR')
+        self._test(inst, 'BOGUS_COMMAND', 'ERROR')
 
         inst.close()
 
