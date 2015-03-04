@@ -8,6 +8,7 @@
     :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
     :license: MIT, see LICENSE for more details.
 """
+from pyvisa.errors import VisaIOError, VisaIOWarning
 
 try:
     import Queue as queue
@@ -16,7 +17,7 @@ except ImportError:
 
 import stringparser
 
-from pyvisa import logger, constants
+from pyvisa import logger, constants 
 
 from . import common
 
@@ -25,8 +26,137 @@ def to_bytes(val):
     """Takes a text message and return a tuple
 
     """
-    val = val.replace('\\r', '\r').replace('\\n', '\n')
-    return val.encode()
+    if type(val) in (bytes, str):
+        val = val.replace('\\r', '\r').replace('\\n', '\n')
+        return val.encode()
+    return val
+
+
+class NoResponse(object):
+    """Sentinel used for when there should not be a response to a query
+    """
+
+    
+EVAL_GLOBALS = {'__builtins__': None}
+
+
+EVAL_LOCALS = {
+    'VI_WARN_QUEUE_OVERFLOW'       : constants.VI_WARN_QUEUE_OVERFLOW, 
+    'VI_WARN_CONFIG_NLOADED'       : constants.VI_WARN_CONFIG_NLOADED, 
+    'VI_WARN_NULL_OBJECT'          : constants.VI_WARN_NULL_OBJECT, 
+    'VI_WARN_NSUP_ATTR_STATE'      : constants.VI_WARN_NSUP_ATTR_STATE, 
+    'VI_WARN_UNKNOWN_STATUS'       : constants.VI_WARN_UNKNOWN_STATUS, 
+    'VI_WARN_NSUP_BUF'             : constants.VI_WARN_NSUP_BUF, 
+
+    # The following one is a non-standard NI extension
+    'VI_WARN_EXT_FUNC_NIMPL'       : constants.VI_WARN_EXT_FUNC_NIMPL, 
+
+    'VI_ERROR_SYSTEM_ERROR'        : constants.VI_ERROR_SYSTEM_ERROR, 
+    'VI_ERROR_INV_OBJECT'          : constants.VI_ERROR_INV_OBJECT, 
+    'VI_ERROR_RSRC_LOCKED'         : constants.VI_ERROR_RSRC_LOCKED, 
+    'VI_ERROR_INV_EXPR'            : constants.VI_ERROR_INV_EXPR, 
+    'VI_ERROR_RSRC_NFOUND'         : constants.VI_ERROR_RSRC_NFOUND, 
+    'VI_ERROR_INV_RSRC_NAME'       : constants.VI_ERROR_INV_RSRC_NAME, 
+    'VI_ERROR_INV_ACC_MODE'        : constants.VI_ERROR_INV_ACC_MODE, 
+    'VI_ERROR_TMO'                 : constants.VI_ERROR_TMO, 
+    'VI_ERROR_CLOSING_FAILED'      : constants.VI_ERROR_CLOSING_FAILED, 
+    'VI_ERROR_INV_DEGREE'          : constants.VI_ERROR_INV_DEGREE, 
+    'VI_ERROR_INV_JOB_ID'          : constants.VI_ERROR_INV_JOB_ID, 
+    'VI_ERROR_NSUP_ATTR'           : constants.VI_ERROR_NSUP_ATTR, 
+    'VI_ERROR_NSUP_ATTR_STATE'     : constants.VI_ERROR_NSUP_ATTR_STATE, 
+    'VI_ERROR_ATTR_READONLY'       : constants.VI_ERROR_ATTR_READONLY, 
+    'VI_ERROR_INV_LOCK_TYPE'       : constants.VI_ERROR_INV_LOCK_TYPE, 
+    'VI_ERROR_INV_ACCESS_KEY'      : constants.VI_ERROR_INV_ACCESS_KEY, 
+    'VI_ERROR_INV_EVENT'           : constants.VI_ERROR_INV_EVENT, 
+    'VI_ERROR_INV_MECH'            : constants.VI_ERROR_INV_MECH, 
+    'VI_ERROR_HNDLR_NINSTALLED'    : constants.VI_ERROR_HNDLR_NINSTALLED, 
+    'VI_ERROR_INV_HNDLR_REF'       : constants.VI_ERROR_INV_HNDLR_REF, 
+    'VI_ERROR_INV_CONTEXT'         : constants.VI_ERROR_INV_CONTEXT, 
+    'VI_ERROR_QUEUE_OVERFLOW'      : constants.VI_ERROR_QUEUE_OVERFLOW, 
+    'VI_ERROR_NENABLED'            : constants.VI_ERROR_NENABLED, 
+    'VI_ERROR_ABORT'               : constants.VI_ERROR_ABORT, 
+    'VI_ERROR_RAW_WR_PROT_VIOL'    : constants.VI_ERROR_RAW_WR_PROT_VIOL, 
+    'VI_ERROR_RAW_RD_PROT_VIOL'    : constants.VI_ERROR_RAW_RD_PROT_VIOL, 
+    'VI_ERROR_OUTP_PROT_VIOL'      : constants.VI_ERROR_OUTP_PROT_VIOL, 
+    'VI_ERROR_INP_PROT_VIOL'       : constants.VI_ERROR_INP_PROT_VIOL, 
+    'VI_ERROR_BERR'                : constants.VI_ERROR_BERR, 
+    'VI_ERROR_IN_PROGRESS'         : constants.VI_ERROR_IN_PROGRESS, 
+    'VI_ERROR_INV_SETUP'           : constants.VI_ERROR_INV_SETUP, 
+    'VI_ERROR_QUEUE_ERROR'         : constants.VI_ERROR_QUEUE_ERROR, 
+    'VI_ERROR_ALLOC'               : constants.VI_ERROR_ALLOC, 
+    'VI_ERROR_INV_MASK'            : constants.VI_ERROR_INV_MASK, 
+    'VI_ERROR_IO'                  : constants.VI_ERROR_IO, 
+    'VI_ERROR_INV_FMT'             : constants.VI_ERROR_INV_FMT, 
+    'VI_ERROR_NSUP_FMT'            : constants.VI_ERROR_NSUP_FMT, 
+    'VI_ERROR_LINE_IN_USE'         : constants.VI_ERROR_LINE_IN_USE, 
+    'VI_ERROR_NSUP_MODE'           : constants.VI_ERROR_NSUP_MODE, 
+    'VI_ERROR_SRQ_NOCCURRED'       : constants.VI_ERROR_SRQ_NOCCURRED, 
+    'VI_ERROR_INV_SPACE'           : constants.VI_ERROR_INV_SPACE, 
+    'VI_ERROR_INV_OFFSET'          : constants.VI_ERROR_INV_OFFSET, 
+    'VI_ERROR_INV_WIDTH'           : constants.VI_ERROR_INV_WIDTH, 
+    'VI_ERROR_NSUP_OFFSET'         : constants.VI_ERROR_NSUP_OFFSET, 
+    'VI_ERROR_NSUP_VAR_WIDTH'      : constants.VI_ERROR_NSUP_VAR_WIDTH, 
+    'VI_ERROR_WINDOW_NMAPPED'      : constants.VI_ERROR_WINDOW_NMAPPED, 
+    'VI_ERROR_RESP_PENDING'        : constants.VI_ERROR_RESP_PENDING, 
+    'VI_ERROR_NLISTENERS'          : constants.VI_ERROR_NLISTENERS, 
+    'VI_ERROR_NCIC'                : constants.VI_ERROR_NCIC, 
+    'VI_ERROR_NSYS_CNTLR'          : constants.VI_ERROR_NSYS_CNTLR, 
+    'VI_ERROR_NSUP_OPER'           : constants.VI_ERROR_NSUP_OPER, 
+    'VI_ERROR_INTR_PENDING'        : constants.VI_ERROR_INTR_PENDING, 
+    'VI_ERROR_ASRL_PARITY'         : constants.VI_ERROR_ASRL_PARITY, 
+    'VI_ERROR_ASRL_FRAMING'        : constants.VI_ERROR_ASRL_FRAMING, 
+    'VI_ERROR_ASRL_OVERRUN'        : constants.VI_ERROR_ASRL_OVERRUN, 
+    'VI_ERROR_TRIG_NMAPPED'        : constants.VI_ERROR_TRIG_NMAPPED, 
+    'VI_ERROR_NSUP_ALIGN_OFFSET'   : constants.VI_ERROR_NSUP_ALIGN_OFFSET, 
+    'VI_ERROR_USER_BUF'            : constants.VI_ERROR_USER_BUF, 
+    'VI_ERROR_RSRC_BUSY'           : constants.VI_ERROR_RSRC_BUSY, 
+    'VI_ERROR_NSUP_WIDTH'          : constants.VI_ERROR_NSUP_WIDTH, 
+    'VI_ERROR_INV_PARAMETER'       : constants.VI_ERROR_INV_PARAMETER, 
+    'VI_ERROR_INV_PROT'            : constants.VI_ERROR_INV_PROT, 
+    'VI_ERROR_INV_SIZE'            : constants.VI_ERROR_INV_SIZE, 
+    'VI_ERROR_WINDOW_MAPPED'       : constants.VI_ERROR_WINDOW_MAPPED, 
+    'VI_ERROR_NIMPL_OPER'          : constants.VI_ERROR_NIMPL_OPER, 
+    'VI_ERROR_INV_LENGTH'          : constants.VI_ERROR_INV_LENGTH, 
+    'VI_ERROR_INV_MODE'            : constants.VI_ERROR_INV_MODE, 
+    'VI_ERROR_SESN_NLOCKED'        : constants.VI_ERROR_SESN_NLOCKED, 
+    'VI_ERROR_MEM_NSHARED'         : constants.VI_ERROR_MEM_NSHARED, 
+    'VI_ERROR_LIBRARY_NFOUND'      : constants.VI_ERROR_LIBRARY_NFOUND, 
+    'VI_ERROR_NSUP_INTR'           : constants.VI_ERROR_NSUP_INTR, 
+    'VI_ERROR_INV_LINE'            : constants.VI_ERROR_INV_LINE, 
+    'VI_ERROR_FILE_ACCESS'         : constants.VI_ERROR_FILE_ACCESS, 
+    'VI_ERROR_FILE_IO'             : constants.VI_ERROR_FILE_IO, 
+    'VI_ERROR_NSUP_LINE'           : constants.VI_ERROR_NSUP_LINE, 
+    'VI_ERROR_NSUP_MECH'           : constants.VI_ERROR_NSUP_MECH, 
+    'VI_ERROR_INTF_NUM_NCONFIG'    : constants.VI_ERROR_INTF_NUM_NCONFIG, 
+    'VI_ERROR_CONN_LOST'           : constants.VI_ERROR_CONN_LOST, 
+
+    # The following two are a non-standard NI extensions
+    'VI_ERROR_MACHINE_NAVAIL'      : constants.VI_ERROR_MACHINE_NAVAIL, 
+    'VI_ERROR_NPERMISSION'         : constants.VI_ERROR_NPERMISSION, 
+    'VisaIOError'                  : VisaIOError,
+    'VisaIOWarning'                : VisaIOWarning,
+}
+
+
+class ErrorResponse(object):
+    
+    def __init__(self, error_input):
+        exception_str = error_input.split('raise')[-1]
+        self._exception = eval(exception_str, EVAL_GLOBALS, EVAL_LOCALS)
+    
+    def raise_exception(self):
+        raise self._exception
+
+    @classmethod
+    def parse_error(cls, error_input):
+        if type(error_input) is str:
+            if 'raise' in error_input:
+                return cls(error_input)
+            elif 'null_response' in error_input:
+                return NoResponse()
+            return error_input
+        else:
+            return error_input
 
 
 class Property(object):
@@ -82,6 +212,31 @@ class Property(object):
         self._value = value
 
 
+class StatusRegister(object):
+    
+    def __init__(self, input_dict):
+        object.__init__(self)
+        self._value = 0
+        self._error_map = {}
+        if 'q' in input_dict:
+            del input_dict['q']
+        for name, value in input_dict.items():
+            self._error_map[name] = int(value)
+    
+    def set(self, error_key):
+        self._value = self._value | self._error_map[error_key]
+
+    def keys(self):
+        return self._error_map.keys()
+
+    @property
+    def value(self):
+        return to_bytes(str(self._value))
+    
+    def clear(self):
+        self._value = 0
+
+
 class Device(object):
     """A representation of a responsive device
 
@@ -102,13 +257,15 @@ class Device(object):
     # :type: bytes
     _response_eom = None
 
-    def __init__(self, name, error_response):
+    def __init__(self, name):
 
         # Name of the device.
         self.name = name
 
         # :type: bytes
-        self.error_response = to_bytes(error_response)
+        self._error_response = {}
+        self._error_map = {}
+        self._status_registers = {}
 
         #: Stores the specific end of messages for device.
         #: TYPE CLASS -> (query termination, response termination)
@@ -154,6 +311,43 @@ class Device(object):
         self._resource_name = p['canonical_resource_name']
         self._query_eom, self._response_eom = self._eoms[(p['interface_type'],
                                                           p['resource_class'])]
+
+    def add_error_handler(self, error_input):
+        """Add error handler to the device
+        """
+        response_dict = {}
+        if type(error_input) == str:
+            error_response = ErrorResponse.parse_error(error_input)
+            response_dict = {
+                'command_error': error_response,
+                'query_error': error_response,
+                }
+        elif type(error_input) == dict:
+            error_response = error_input.get('response', {})
+            response_dict = {
+                'command_error': ErrorResponse.parse_error(
+                    error_response.get('command_error', NoResponse())
+                    ),
+                'query_error': ErrorResponse.parse_error(
+                    error_response.get('query_error', NoResponse())
+                    ),
+                }
+            register_list = error_input.get('status_register', [])
+            for register_dict in register_list:
+                query = register_dict.get('q')
+                register = StatusRegister(register_dict)
+                self._status_registers[to_bytes(query)] = register
+                for key in register.keys():
+                    self._error_map[key] = register
+
+        for key, value in response_dict.items():
+            self._error_response[key] = to_bytes(value)
+        
+        return response_dict['command_error']
+    
+    def error_response(self, error_key):
+        self._error_map[error_key].set(error_key)
+        return self._error_response.get(error_key)
 
     def add_dialogue(self, query, response):
         """Add dialogue to device.
@@ -219,10 +413,15 @@ class Device(object):
         eom = self._response_eom
 
         if response is None:
-            response = self.error_response
+            response = self.error_response('command_error')
 
-        self._output_buffer.extend(response)
-        self._output_buffer.extend(eom)
+        if isinstance(response, NoResponse):
+            self._output_buffer = bytearray()
+        elif isinstance(response, ErrorResponse):
+            response.raise_exception()
+        else:
+            self._output_buffer.extend(response)
+            self._output_buffer.extend(eom)
 
         self._input_buffer = bytearray()
 
@@ -255,6 +454,15 @@ class Device(object):
         except KeyError:
             pass
 
+        # Try to match in the status registers
+        if query in self._status_registers:
+            register = self._status_registers[query]
+            response = register.value
+            logger.debug('Found response in status register: %s' % repr(response))
+            register.clear()
+
+            return response
+
         q = query.decode('utf-8')
 
         # Finally in the setters, this will be slow.
@@ -280,6 +488,14 @@ class Device(object):
         if self._output_buffer:
             b, self._output_buffer = self._output_buffer[0:1], self._output_buffer[1:]
             return b
+        error_response = self.error_response('query_error')
+        if isinstance(error_response, bytes):
+            self._output_buffer.extend(error_response)
+            self._output_buffer.extend(self._response_eom)
+            b, self._output_buffer = self._output_buffer[0:1], self._output_buffer[1:]
+            return b
+        elif isinstance(error_response, ErrorResponse):
+            error_response.raise_exception()
 
         return b''
 
