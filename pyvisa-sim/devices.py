@@ -37,112 +37,17 @@ class NoResponse(object):
     """
 
     
-EVAL_GLOBALS = {'__builtins__': None}
-
-
-EVAL_LOCALS = {
-    'VI_WARN_QUEUE_OVERFLOW'       : constants.VI_WARN_QUEUE_OVERFLOW, 
-    'VI_WARN_CONFIG_NLOADED'       : constants.VI_WARN_CONFIG_NLOADED, 
-    'VI_WARN_NULL_OBJECT'          : constants.VI_WARN_NULL_OBJECT, 
-    'VI_WARN_NSUP_ATTR_STATE'      : constants.VI_WARN_NSUP_ATTR_STATE, 
-    'VI_WARN_UNKNOWN_STATUS'       : constants.VI_WARN_UNKNOWN_STATUS, 
-    'VI_WARN_NSUP_BUF'             : constants.VI_WARN_NSUP_BUF, 
-
-    # The following one is a non-standard NI extension
-    'VI_WARN_EXT_FUNC_NIMPL'       : constants.VI_WARN_EXT_FUNC_NIMPL, 
-
-    'VI_ERROR_SYSTEM_ERROR'        : constants.VI_ERROR_SYSTEM_ERROR, 
-    'VI_ERROR_INV_OBJECT'          : constants.VI_ERROR_INV_OBJECT, 
-    'VI_ERROR_RSRC_LOCKED'         : constants.VI_ERROR_RSRC_LOCKED, 
-    'VI_ERROR_INV_EXPR'            : constants.VI_ERROR_INV_EXPR, 
-    'VI_ERROR_RSRC_NFOUND'         : constants.VI_ERROR_RSRC_NFOUND, 
-    'VI_ERROR_INV_RSRC_NAME'       : constants.VI_ERROR_INV_RSRC_NAME, 
-    'VI_ERROR_INV_ACC_MODE'        : constants.VI_ERROR_INV_ACC_MODE, 
-    'VI_ERROR_TMO'                 : constants.VI_ERROR_TMO, 
-    'VI_ERROR_CLOSING_FAILED'      : constants.VI_ERROR_CLOSING_FAILED, 
-    'VI_ERROR_INV_DEGREE'          : constants.VI_ERROR_INV_DEGREE, 
-    'VI_ERROR_INV_JOB_ID'          : constants.VI_ERROR_INV_JOB_ID, 
-    'VI_ERROR_NSUP_ATTR'           : constants.VI_ERROR_NSUP_ATTR, 
-    'VI_ERROR_NSUP_ATTR_STATE'     : constants.VI_ERROR_NSUP_ATTR_STATE, 
-    'VI_ERROR_ATTR_READONLY'       : constants.VI_ERROR_ATTR_READONLY, 
-    'VI_ERROR_INV_LOCK_TYPE'       : constants.VI_ERROR_INV_LOCK_TYPE, 
-    'VI_ERROR_INV_ACCESS_KEY'      : constants.VI_ERROR_INV_ACCESS_KEY, 
-    'VI_ERROR_INV_EVENT'           : constants.VI_ERROR_INV_EVENT, 
-    'VI_ERROR_INV_MECH'            : constants.VI_ERROR_INV_MECH, 
-    'VI_ERROR_HNDLR_NINSTALLED'    : constants.VI_ERROR_HNDLR_NINSTALLED, 
-    'VI_ERROR_INV_HNDLR_REF'       : constants.VI_ERROR_INV_HNDLR_REF, 
-    'VI_ERROR_INV_CONTEXT'         : constants.VI_ERROR_INV_CONTEXT, 
-    'VI_ERROR_QUEUE_OVERFLOW'      : constants.VI_ERROR_QUEUE_OVERFLOW, 
-    'VI_ERROR_NENABLED'            : constants.VI_ERROR_NENABLED, 
-    'VI_ERROR_ABORT'               : constants.VI_ERROR_ABORT, 
-    'VI_ERROR_RAW_WR_PROT_VIOL'    : constants.VI_ERROR_RAW_WR_PROT_VIOL, 
-    'VI_ERROR_RAW_RD_PROT_VIOL'    : constants.VI_ERROR_RAW_RD_PROT_VIOL, 
-    'VI_ERROR_OUTP_PROT_VIOL'      : constants.VI_ERROR_OUTP_PROT_VIOL, 
-    'VI_ERROR_INP_PROT_VIOL'       : constants.VI_ERROR_INP_PROT_VIOL, 
-    'VI_ERROR_BERR'                : constants.VI_ERROR_BERR, 
-    'VI_ERROR_IN_PROGRESS'         : constants.VI_ERROR_IN_PROGRESS, 
-    'VI_ERROR_INV_SETUP'           : constants.VI_ERROR_INV_SETUP, 
-    'VI_ERROR_QUEUE_ERROR'         : constants.VI_ERROR_QUEUE_ERROR, 
-    'VI_ERROR_ALLOC'               : constants.VI_ERROR_ALLOC, 
-    'VI_ERROR_INV_MASK'            : constants.VI_ERROR_INV_MASK, 
-    'VI_ERROR_IO'                  : constants.VI_ERROR_IO, 
-    'VI_ERROR_INV_FMT'             : constants.VI_ERROR_INV_FMT, 
-    'VI_ERROR_NSUP_FMT'            : constants.VI_ERROR_NSUP_FMT, 
-    'VI_ERROR_LINE_IN_USE'         : constants.VI_ERROR_LINE_IN_USE, 
-    'VI_ERROR_NSUP_MODE'           : constants.VI_ERROR_NSUP_MODE, 
-    'VI_ERROR_SRQ_NOCCURRED'       : constants.VI_ERROR_SRQ_NOCCURRED, 
-    'VI_ERROR_INV_SPACE'           : constants.VI_ERROR_INV_SPACE, 
-    'VI_ERROR_INV_OFFSET'          : constants.VI_ERROR_INV_OFFSET, 
-    'VI_ERROR_INV_WIDTH'           : constants.VI_ERROR_INV_WIDTH, 
-    'VI_ERROR_NSUP_OFFSET'         : constants.VI_ERROR_NSUP_OFFSET, 
-    'VI_ERROR_NSUP_VAR_WIDTH'      : constants.VI_ERROR_NSUP_VAR_WIDTH, 
-    'VI_ERROR_WINDOW_NMAPPED'      : constants.VI_ERROR_WINDOW_NMAPPED, 
-    'VI_ERROR_RESP_PENDING'        : constants.VI_ERROR_RESP_PENDING, 
-    'VI_ERROR_NLISTENERS'          : constants.VI_ERROR_NLISTENERS, 
-    'VI_ERROR_NCIC'                : constants.VI_ERROR_NCIC, 
-    'VI_ERROR_NSYS_CNTLR'          : constants.VI_ERROR_NSYS_CNTLR, 
-    'VI_ERROR_NSUP_OPER'           : constants.VI_ERROR_NSUP_OPER, 
-    'VI_ERROR_INTR_PENDING'        : constants.VI_ERROR_INTR_PENDING, 
-    'VI_ERROR_ASRL_PARITY'         : constants.VI_ERROR_ASRL_PARITY, 
-    'VI_ERROR_ASRL_FRAMING'        : constants.VI_ERROR_ASRL_FRAMING, 
-    'VI_ERROR_ASRL_OVERRUN'        : constants.VI_ERROR_ASRL_OVERRUN, 
-    'VI_ERROR_TRIG_NMAPPED'        : constants.VI_ERROR_TRIG_NMAPPED, 
-    'VI_ERROR_NSUP_ALIGN_OFFSET'   : constants.VI_ERROR_NSUP_ALIGN_OFFSET, 
-    'VI_ERROR_USER_BUF'            : constants.VI_ERROR_USER_BUF, 
-    'VI_ERROR_RSRC_BUSY'           : constants.VI_ERROR_RSRC_BUSY, 
-    'VI_ERROR_NSUP_WIDTH'          : constants.VI_ERROR_NSUP_WIDTH, 
-    'VI_ERROR_INV_PARAMETER'       : constants.VI_ERROR_INV_PARAMETER, 
-    'VI_ERROR_INV_PROT'            : constants.VI_ERROR_INV_PROT, 
-    'VI_ERROR_INV_SIZE'            : constants.VI_ERROR_INV_SIZE, 
-    'VI_ERROR_WINDOW_MAPPED'       : constants.VI_ERROR_WINDOW_MAPPED, 
-    'VI_ERROR_NIMPL_OPER'          : constants.VI_ERROR_NIMPL_OPER, 
-    'VI_ERROR_INV_LENGTH'          : constants.VI_ERROR_INV_LENGTH, 
-    'VI_ERROR_INV_MODE'            : constants.VI_ERROR_INV_MODE, 
-    'VI_ERROR_SESN_NLOCKED'        : constants.VI_ERROR_SESN_NLOCKED, 
-    'VI_ERROR_MEM_NSHARED'         : constants.VI_ERROR_MEM_NSHARED, 
-    'VI_ERROR_LIBRARY_NFOUND'      : constants.VI_ERROR_LIBRARY_NFOUND, 
-    'VI_ERROR_NSUP_INTR'           : constants.VI_ERROR_NSUP_INTR, 
-    'VI_ERROR_INV_LINE'            : constants.VI_ERROR_INV_LINE, 
-    'VI_ERROR_FILE_ACCESS'         : constants.VI_ERROR_FILE_ACCESS, 
-    'VI_ERROR_FILE_IO'             : constants.VI_ERROR_FILE_IO, 
-    'VI_ERROR_NSUP_LINE'           : constants.VI_ERROR_NSUP_LINE, 
-    'VI_ERROR_NSUP_MECH'           : constants.VI_ERROR_NSUP_MECH, 
-    'VI_ERROR_INTF_NUM_NCONFIG'    : constants.VI_ERROR_INTF_NUM_NCONFIG, 
-    'VI_ERROR_CONN_LOST'           : constants.VI_ERROR_CONN_LOST, 
-
-    # The following two are a non-standard NI extensions
-    'VI_ERROR_MACHINE_NAVAIL'      : constants.VI_ERROR_MACHINE_NAVAIL, 
-    'VI_ERROR_NPERMISSION'         : constants.VI_ERROR_NPERMISSION, 
-    'VisaIOError'                  : VisaIOError,
-    'VisaIOWarning'                : VisaIOWarning,
-}
-
-
 class ErrorResponse(object):
     
+    EVAL_GLOBALS = {'__builtins__': None}
+
     def __init__(self, error_input):
         exception_str = error_input.split('raise')[-1]
-        self._exception = eval(exception_str, EVAL_GLOBALS, EVAL_LOCALS)
+        constants_dir = globals().get('constants').__dict__
+        constants_dir['VisaIOError'] = VisaIOError
+        constants_dir['VisaIOWarning'] = VisaIOWarning
+        constants_dir['__builtins__'] = None
+        self._exception = eval(exception_str, self.EVAL_GLOBALS, constants_dir)
     
     def raise_exception(self):
         raise self._exception
@@ -455,13 +360,17 @@ class Device(object):
             pass
 
         # Try to match in the status registers
-        if query in self._status_registers:
-            register = self._status_registers[query]
-            response = register.value
-            logger.debug('Found response in status register: %s' % repr(response))
-            register.clear()
+        try:
+            if query in self._status_registers:
+                register = self._status_registers[query]
+                response = register.value
+                logger.debug('Found response in status register: %s' % repr(response))
+                register.clear()
 
-            return response
+                return response
+
+        except KeyError:
+            pass
 
         q = query.decode('utf-8')
 
