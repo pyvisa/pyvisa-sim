@@ -22,7 +22,7 @@ from .devices import Devices, Device, NoResponse, is_str
 #: Version of the specification
 SPEC_VERSION = '1.0'
 
-SPEC_VERSION_TUPLE = (map(int, (SPEC_VERSION.split("."))))
+SPEC_VERSION_TUPLE = tuple(map(int, (SPEC_VERSION.split("."))))
 
 
 def _s(s):
