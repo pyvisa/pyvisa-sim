@@ -101,24 +101,17 @@ class TestAll(BaseTestCase):
             read_termination='\n',
             write_termination='\r\n' if resource_name.startswith('ASRL') else '\n'
             )
-        inst.write('FAKE_COMMAND')
+        response = inst.query('FAKE_COMMAND')
+        self.assertEqual(
+            response,
+            'INVALID_COMMAND',
+            'invalid command test - response'
+            )
         status_reg = inst.query('*ESR?')
         self.assertEqual(
             int(status_reg),
             32,
-            'invalid command test'
-            )
-        error_msg = inst.query(':VOLT:IMM:AMPL 2.00')
-        self.assertEqual(
-            error_msg,
-            'ERROR',
-            'unexpected read test - query'
-            )
-        status_reg = inst.query('*ESR?')
-        self.assertEqual(
-            int(status_reg),
-            4,
-            'unexpected read test - status'
+            'invalid command test - status'
             )
 
     def _test(self, inst, a, b):
