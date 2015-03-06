@@ -70,7 +70,6 @@ read an empty buffer.
     error:
       response:
         command_error: null_response
-        query_error: null_response
       status_register:
         - q: "*ESR?"
           command_error: 32
