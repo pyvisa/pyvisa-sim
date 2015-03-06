@@ -13,12 +13,21 @@ class TestAll(BaseTestCase):
 
     def test_list(self):
         self.assertEqual(set(self.rm.list_resources()),
-                         set(('GPIB0::8::65535::INSTR',
-                              'GPIB0::9::65535::INSTR',
-                              'GPIB0::10::65535::INSTR',
-                              'TCPIP0::localhost::inst0::INSTR',
-                              'ASRL1::INSTR',
-                              'USB0::0x1111::0x2222::0x1234::0::INSTR')))
+                         set((
+                          'ASRL1::INSTR',
+                          'USB0::0x1111::0x2222::0x1234::0::INSTR',
+                          'TCPIP0::localhost::inst0::INSTR',
+                          'GPIB0::8::65535::INSTR',
+                          'ASRL2::INSTR',
+                          'USB0::0x1111::0x2222::0x2468::0::INSTR',
+                          'TCPIP0::localhost:2222::inst0::INSTR',
+                          'GPIB0::9::65535::INSTR',
+                          'ASRL3::INSTR',
+                          'USB0::0x1111::0x2222::0x3692::0::INSTR',
+                          'TCPIP0::localhost:3333::inst0::INSTR',
+                          'GPIB0::10::65535::INSTR',
+                         )))
+
     def test_devices(self):
         run_list = (
             'GPIB0::8::65535::INSTR',
@@ -28,9 +37,28 @@ class TestAll(BaseTestCase):
             )
         for rn in run_list:
             self._test_device(rn)
+
+    def test_devices_2(self):
+        run_list = (
+            'ASRL2::INSTR',
+            'USB0::0x1111::0x2222::0x2468::0::INSTR',
+            'TCPIP0::localhost:2222::inst0::INSTR',
+            'GPIB0::9::65535::INSTR',
+            )
+        for rn in run_list:
+            self._test_device_2(rn)
+
+    def test_devices_3(self):
+        run_list = (
+            'ASRL3::INSTR',
+            'USB0::0x1111::0x2222::0x3692::0::INSTR',
+            'TCPIP0::localhost:3333::inst0::INSTR',
+            'GPIB0::10::65535::INSTR',
+            )
+        for rn in run_list:
+            self._test_device_3(rn)
     
-    def test_device_2(self):
-        resource_name = 'GPIB0::9::65535::INSTR'
+    def _test_device_2(self, resource_name):
         inst = self.rm.open_resource(
             resource_name,
             read_termination='\n',
@@ -67,8 +95,7 @@ class TestAll(BaseTestCase):
             'invalid range test - >max'
             )
 
-    def test_device_3(self):
-        resource_name = 'GPIB0::10::65535::INSTR'
+    def _test_device_3(self, resource_name):
         inst = self.rm.open_resource(
             resource_name,
             read_termination='\n',
@@ -93,8 +120,6 @@ class TestAll(BaseTestCase):
             4,
             'unexpected read test - status'
             )
-        with self.assertRaises(VisaIOError, msg='invalid range write - raise'):
-            inst.write(':VOLT:IMM:AMPL 0.5')
 
     def _test(self, inst, a, b):
         self.assertEqual(inst.query(a), b, msg=inst.resource_name + ', %r == %r' % (a, b))

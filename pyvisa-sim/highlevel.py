@@ -14,6 +14,7 @@ from __future__ import division, unicode_literals, print_function, absolute_impo
 import random
 
 from pyvisa import constants, highlevel
+from pyvisa.errors import VisaIOError, VisaIOWarning
 
 from . import common
 from . import parser
@@ -215,7 +216,10 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
             return b'', constants.StatusCode.error_invalid_object
 
         try:
-            return sess.read(count)
+            chunk, status = sess.read(count)
+            if status == constants.StatusCode.error_timeout:
+                raise VisaIOError(constants.VI_ERROR_TMO)
+            return (chunk, status)
         except AttributeError:
             return b'', constants.StatusCode.error_nonsupported_operation
 
