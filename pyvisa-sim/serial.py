@@ -40,6 +40,7 @@ class SerialInstrumentSession(sessions.Session):
 
         enabled, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR_EN)
         timeout, _ = self.get_attribute(constants.VI_ATTR_TMO_VALUE)
+        timeout /= 1000
 
         last_bit, _ = self.get_attribute(constants.VI_ATTR_ASRL_DATA_BITS)
         mask = 1 << (last_bit - 1)
