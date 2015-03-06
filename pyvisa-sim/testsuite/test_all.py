@@ -16,7 +16,7 @@ class TestAll(BaseTestCase):
                          set((
                           'ASRL1::INSTR',
                           'USB0::0x1111::0x2222::0x1234::0::INSTR',
-                          'TCPIP0::localhost::inst0::INSTR',
+                          'TCPIP0::localhost:1111::inst0::INSTR',
                           'GPIB0::8::65535::INSTR',
                           'ASRL2::INSTR',
                           'USB0::0x1111::0x2222::0x2468::0::INSTR',
@@ -31,7 +31,7 @@ class TestAll(BaseTestCase):
     def test_devices(self):
         run_list = (
             'GPIB0::8::65535::INSTR',
-            'TCPIP0::localhost::inst0::INSTR',
+            'TCPIP0::localhost:1111::inst0::INSTR',
             'ASRL1::INSTR',
             'USB0::0x1111::0x2222::0x1234::0::INSTR'
             )
@@ -101,24 +101,17 @@ class TestAll(BaseTestCase):
             read_termination='\n',
             write_termination='\r\n' if resource_name.startswith('ASRL') else '\n'
             )
-        inst.write('FAKE_COMMAND')
+        response = inst.query('FAKE_COMMAND')
+        self.assertEqual(
+            response,
+            'INVALID_COMMAND',
+            'invalid command test - response'
+            )
         status_reg = inst.query('*ESR?')
         self.assertEqual(
             int(status_reg),
             32,
-            'invalid command test'
-            )
-        error_msg = inst.query(':VOLT:IMM:AMPL 2.00')
-        self.assertEqual(
-            error_msg,
-            'ERROR',
-            'unexpected read test - query'
-            )
-        status_reg = inst.query('*ESR?')
-        self.assertEqual(
-            int(status_reg),
-            4,
-            'unexpected read test - status'
+            'invalid command test - status'
             )
 
     def _test(self, inst, a, b):

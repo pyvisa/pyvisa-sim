@@ -389,12 +389,7 @@ class Device(object):
         if self._output_buffer:
             b, self._output_buffer = self._output_buffer[0:1], self._output_buffer[1:]
             return b
-        error_response = self.error_response('query_error')
-        if isinstance(error_response, bytes):
-            self._output_buffer.extend(error_response)
-            self._output_buffer.extend(self._response_eom)
-            b, self._output_buffer = self._output_buffer[0:1], self._output_buffer[1:]
-            return b
+        self.error_response('query_error')
 
         return b''
 
