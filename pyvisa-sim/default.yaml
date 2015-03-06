@@ -29,6 +29,7 @@ devices:
         setter:
           q: "!FREQ {:.2f}"
           r: OK
+          e: 'FREQ_ERROR'
         specs:
           min: 1
           max: 100000
@@ -79,13 +80,160 @@ devices:
         specs:
           valid: [0, 1, 2, 3]
           type: int
+  device 2:
+    eom:
+      ASRL INSTR:
+        q: "\r\n"
+        r: "\n"
+      USB INSTR:
+        q: "\n"
+        r: "\n"
+      TCPIP INSTR:
+        q: "\n"
+        r: "\n"
+      GPIB INSTR:
+        q: "\n"
+        r: "\n"
+    dialogues:
+      - q: "*IDN?"
+        r: "SCPI,MOCK,VERSION_1.0"
+    error:
+      response:
+        command_error: null_response
+      status_register:
+        - q: "*ESR?"
+          command_error: 32
+          query_error: 4
+    properties:
+      voltage:
+        default: 1.0
+        getter:
+          q: ":VOLT:IMM:AMPL?"
+          r: "{:+.8E}"
+        setter:
+          q: ":VOLT:IMM:AMPL {:.3f}"
+        specs:
+          min: 1
+          max: 6
+          type: float
+      current:
+        default: 1.0
+        getter:
+          q: ":CURR:IMM:AMPL?"
+          r: "{:+.8E}"
+        setter:
+          q: ":CURR:IMM:AMPL {:.3f}"
+        specs:
+          min: 1
+          max: 6
+          type: float
+      rail:
+        default: P6V
+        getter:
+          q: "INST?"
+          r: "{:s}"
+        setter:
+          q: "INST {:s}"
+        specs:
+            valid: ["P6V", "P25V", "N25V"]
+            type: str
+      output_enabled:
+        default: 0
+        getter:
+          q: "OUTP?"
+          r: "{:d}"
+        setter:
+          q: "OUTP {:d}"
+        specs:
+          valid: [0, 1]
+          type: int
+  device 3:
+    eom:
+      ASRL INSTR:
+        q: "\r\n"
+        r: "\n"
+      USB INSTR:
+        q: "\n"
+        r: "\n"
+      TCPIP INSTR:
+        q: "\n"
+        r: "\n"
+      GPIB INSTR:
+        q: "\n"
+        r: "\n"
+    dialogues:
+      - q: "*IDN?"
+        r: "SCPI,MOCK,VERSION_1.0"
+    error:
+      response:
+        command_error: 'INVALID_COMMAND'
+      status_register:
+        - q: "*ESR?"
+          command_error: 32
+          query_error: 4
+    properties:
+      voltage:
+        default: 1.0
+        getter:
+          q: ":VOLT:IMM:AMPL?"
+          r: "{:+.8E}"
+        setter:
+          q: ":VOLT:IMM:AMPL {:.3f}"
+        specs:
+          min: 1
+          max: 6
+          type: float
+      current:
+        default: 1.0
+        getter:
+          q: ":CURR:IMM:AMPL?"
+          r: "{:+.8E}"
+        setter:
+          q: ":CURR:IMM:AMPL {:.3f}"
+        specs:
+          min: 1
+          max: 6
+          type: float
+      rail:
+        default: P6V
+        getter:
+          q: "INST?"
+          r: "{:s}"
+        setter:
+          q: "INST {:s}"
+        specs:
+            valid: ["P6V", "P25V", "N25V"]
+            type: str
+      output_enabled:
+        default: 0
+        getter:
+          q: "OUTP?"
+          r: "{:d}"
+        setter:
+          q: "OUTP {:d}"
 
 resources:
   ASRL1::INSTR:
     device: device 1
   USB::0x1111::0x2222::0x1234::INSTR:
     device: device 1
-  TCPIP::localhost::INSTR:
+  TCPIP::localhost:1111::INSTR:
     device: device 1
   GPIB::8::INSTR:
     device: device 1
+  ASRL2::INSTR:
+    device: device 2
+  USB::0x1111::0x2222::0x2468::INSTR:
+    device: device 2
+  TCPIP::localhost:2222::INSTR:
+    device: device 2
+  GPIB::9::INSTR:
+    device: device 2
+  ASRL3::INSTR:
+    device: device 3
+  USB::0x1111::0x2222::0x3692::INSTR:
+    device: device 3
+  TCPIP::localhost:3333::INSTR:
+    device: device 3
+  GPIB::10::INSTR:
+    device: device 3
