@@ -8,8 +8,6 @@
     :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
     :license: MIT, see LICENSE for more details.
 """
-from pyvisa.errors import VisaIOError, VisaIOWarning
-
 try:
     import Queue as queue
 except ImportError:
@@ -23,7 +21,6 @@ from pyvisa import logger, constants
 from . import common
 
 
-PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
 
 
@@ -57,29 +54,10 @@ class NoResponse(object):
     """Sentinel used for when there should not be a response to a query
     """
 
-    
-class ErrorResponse(object):
-    
-    EVAL_GLOBALS = {'__builtins__': None}
-
-    def __init__(self, error_input):
-        exception_str = error_input.split('raise')[-1]
-        constants_dir = globals().get('constants').__dict__
-        constants_dir['VisaIOError'] = VisaIOError
-        constants_dir['VisaIOWarning'] = VisaIOWarning
-        constants_dir['__builtins__'] = None
-        exception = eval(exception_str, self.EVAL_GLOBALS, constants_dir)
-        self._exception = exception
-    
-    def raise_exception(self):
-        raise self._exception
-
     @classmethod
     def parse_error(cls, error_input):
         if is_str(error_input):
-            if 'raise' in error_input:
-                return cls(error_input)
-            elif 'null_response' in error_input:
+            if 'null_response' in error_input:
                 return NoResponse()
             return error_input
         else:
@@ -145,10 +123,9 @@ class StatusRegister(object):
         object.__init__(self)
         self._value = 0
         self._error_map = {}
-        if 'q' in input_dict:
-            del input_dict['q']
         for name, value in input_dict.items():
-            self._error_map[name] = int(value)
+            if name != 'q':
+                self._error_map[name] = int(value)
     
     def set(self, error_key):
         self._value = self._value | self._error_map[error_key]
@@ -244,7 +221,7 @@ class Device(object):
         """
         response_dict = {}
         if is_str(error_input):
-            error_response = ErrorResponse.parse_error(error_input)
+            error_response = NoResponse.parse_error(error_input)
             response_dict = {
                 'command_error': error_response,
                 'query_error': error_response,
@@ -252,10 +229,10 @@ class Device(object):
         elif type(error_input) == dict:
             error_response = error_input.get('response', {})
             response_dict = {
-                'command_error': ErrorResponse.parse_error(
+                'command_error': NoResponse.parse_error(
                     error_response.get('command_error', NoResponse())
                     ),
-                'query_error': ErrorResponse.parse_error(
+                'query_error': NoResponse.parse_error(
                     error_response.get('query_error', NoResponse())
                     ),
                 }
@@ -300,7 +277,7 @@ class Device(object):
         self._getters[to_bytes(query)] = name, response
 
         query, response, error = setter_triplet
-        error_response = ErrorResponse.parse_error(error)
+        error_response = NoResponse.parse_error(error)
         self._setters.append((name,
                               stringparser.Parser(query),
                               to_bytes(response),
@@ -402,8 +379,6 @@ class Device(object):
             except ValueError:
                 if isinstance(error_response, bytes):
                     return error_response
-                elif isinstance(error_response, ErrorResponse):
-                    error_response.raise_exception()
                 return self.error_response('command_error')
 
         return None
@@ -420,8 +395,6 @@ class Device(object):
             self._output_buffer.extend(self._response_eom)
             b, self._output_buffer = self._output_buffer[0:1], self._output_buffer[1:]
             return b
-        elif isinstance(error_response, ErrorResponse):
-            error_response.raise_exception()
 
         return b''
 
