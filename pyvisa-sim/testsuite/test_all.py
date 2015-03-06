@@ -16,7 +16,7 @@ class TestAll(BaseTestCase):
                          set((
                           'ASRL1::INSTR',
                           'USB0::0x1111::0x2222::0x1234::0::INSTR',
-                          'TCPIP0::localhost::inst0::INSTR',
+                          'TCPIP0::localhost:1111::inst0::INSTR',
                           'GPIB0::8::65535::INSTR',
                           'ASRL2::INSTR',
                           'USB0::0x1111::0x2222::0x2468::0::INSTR',
@@ -31,7 +31,7 @@ class TestAll(BaseTestCase):
     def test_devices(self):
         run_list = (
             'GPIB0::8::65535::INSTR',
-            'TCPIP0::localhost::inst0::INSTR',
+            'TCPIP0::localhost:1111::inst0::INSTR',
             'ASRL1::INSTR',
             'USB0::0x1111::0x2222::0x1234::0::INSTR'
             )

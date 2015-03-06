@@ -218,7 +218,7 @@ resources:
     device: device 1
   USB::0x1111::0x2222::0x1234::INSTR:
     device: device 1
-  TCPIP::localhost::INSTR:
+  TCPIP::localhost:1111::INSTR:
     device: device 1
   GPIB::8::INSTR:
     device: device 1
