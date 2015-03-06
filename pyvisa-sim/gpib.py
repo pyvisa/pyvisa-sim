@@ -35,6 +35,7 @@ class GPIBInstrumentSession(sessions.Session):
         end_char, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR)
         enabled, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR_EN)
         timeout, _ = self.get_attribute(constants.VI_ATTR_TMO_VALUE)
+        timeout /= 1000
 
         now = start = time.time()
 
@@ -52,7 +53,7 @@ class GPIBInstrumentSession(sessions.Session):
             out += last
 
             if enabled:
-                if out[-1] == end_char:
+                if len(out) > 0 and out[-1] == end_char:
                     return out, constants.StatusCode.success_termination_character_read
 
             if len(out) == count:

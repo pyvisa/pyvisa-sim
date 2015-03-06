@@ -100,7 +100,6 @@ devices:
     error:
       response:
         command_error: null_response
-        query_error: raise VisaIOError(VI_ERROR_TMO)
       status_register:
         - q: "*ESR?"
           command_error: 32
@@ -167,7 +166,7 @@ devices:
         r: "SCPI,MOCK,VERSION_1.0"
     error:
       response:
-        query_error: 'ERROR'
+        command_error: 'INVALID_COMMAND'
       status_register:
         - q: "*ESR?"
           command_error: 32
@@ -180,7 +179,6 @@ devices:
           r: "{:+.8E}"
         setter:
           q: ":VOLT:IMM:AMPL {:.3f}"
-          e: raise VisaIOError(VI_ERROR_TMO)
         specs:
           min: 1
           max: 6
@@ -219,11 +217,23 @@ resources:
     device: device 1
   USB::0x1111::0x2222::0x1234::INSTR:
     device: device 1
-  TCPIP::localhost::INSTR:
+  TCPIP::localhost:1111::INSTR:
     device: device 1
   GPIB::8::INSTR:
     device: device 1
+  ASRL2::INSTR:
+    device: device 2
+  USB::0x1111::0x2222::0x2468::INSTR:
+    device: device 2
+  TCPIP::localhost:2222::INSTR:
+    device: device 2
   GPIB::9::INSTR:
     device: device 2
+  ASRL3::INSTR:
+    device: device 3
+  USB::0x1111::0x2222::0x3692::INSTR:
+    device: device 3
+  TCPIP::localhost:3333::INSTR:
+    device: device 3
   GPIB::10::INSTR:
     device: device 3
