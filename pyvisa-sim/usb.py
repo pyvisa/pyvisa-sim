@@ -47,13 +47,11 @@ class USBInstrumentSession(sessions.Session):
         out = b''
 
         while now - start <= timeout:
-            try:
-                last = self.device.read()
-            except queue.Empty:
+            last = self.device.read()
+
+            if not last:
                 time.sleep(.01)
                 continue
-            finally:
-                now = time.time()
 
             out += last
 

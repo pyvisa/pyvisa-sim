@@ -8,60 +8,25 @@
     :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
     :license: MIT, see LICENSE for more details.
 """
-try:
-    import Queue as queue
-except ImportError:
-    import queue
 
 import stringparser
-import sys
 
-from pyvisa import logger, constants 
+from pyvisa import logger, constants
 
 from . import common
 
 
-PY3 = sys.version_info[0] == 3
-
-
-if PY3:
-    string_types = str,
-    text_type = str
-    binary_type = bytes
-else:
-    string_types = basestring,
-    text_type = unicode
-    binary_type = str
-
-
-def is_str(input_value):
-    """Do string type checking across versions of Python
-    """
-    return isinstance(input_value, string_types)
-
-
 def to_bytes(val):
     """Takes a text message and return a tuple
-
     """
-    if type(val) in (text_type, binary_type):
-        val = val.replace('\\r', '\r').replace('\\n', '\n')
-        return val.encode()
-    return val
+    if val is NoResponse:
+        return val
+    val = val.replace('\\r', '\r').replace('\\n', '\n')
+    return val.encode()
 
 
-class NoResponse(object):
-    """Sentinel used for when there should not be a response to a query
-    """
-
-    @classmethod
-    def parse_error(cls, error_input):
-        if is_str(error_input):
-            if 'null_response' in error_input:
-                return NoResponse()
-            return error_input
-        else:
-            return error_input
+# Sentinel used for when there should not be a response to a query
+NoResponse = object()
 
 
 class Property(object):
@@ -119,13 +84,14 @@ class Property(object):
 
 class StatusRegister(object):
     
-    def __init__(self, input_dict):
+    def __init__(self, values):
         object.__init__(self)
         self._value = 0
         self._error_map = {}
-        for name, value in input_dict.items():
-            if name != 'q':
-                self._error_map[name] = int(value)
+        for name, value in values.items():
+            if name == 'q':
+                continue
+            self._error_map[name] = int(value)
     
     def set(self, error_key):
         self._value = self._value | self._error_map[error_key]
@@ -166,10 +132,16 @@ class Device(object):
         # Name of the device.
         self.name = name
 
-        # :type: bytes
+        #: Stores the error response for each query accepted by the device.
+        #: :type: dict[bytes, bytes | NoResponse]
         self._error_response = {}
-        self._error_map = {}
+
+        #: Stores the registers by name.
+        #: Register name -> Register object
+        #: :type: dict[str, StatusRegister]
         self._status_registers = {}
+
+        self._error_map = {}
 
         #: Stores the specific end of messages for device.
         #: TYPE CLASS -> (query termination, response termination)
@@ -219,35 +191,29 @@ class Device(object):
     def add_error_handler(self, error_input):
         """Add error handler to the device
         """
-        response_dict = {}
-        if is_str(error_input):
-            error_response = NoResponse.parse_error(error_input)
-            response_dict = {
-                'command_error': error_response,
-                'query_error': error_response,
-                }
-        elif type(error_input) == dict:
+
+        if isinstance(error_input, dict):
             error_response = error_input.get('response', {})
-            response_dict = {
-                'command_error': NoResponse.parse_error(
-                    error_response.get('command_error', NoResponse())
-                    ),
-                'query_error': NoResponse.parse_error(
-                    error_response.get('query_error', NoResponse())
-                    ),
-                }
+            cerr = error_response.get('command_error', NoResponse)
+            qerr = error_response.get('query_error', NoResponse)
+
+            response_dict = {'command_error': cerr,
+                             'query_error': qerr}
+
             register_list = error_input.get('status_register', [])
+
             for register_dict in register_list:
-                query = register_dict.get('q')
+                query = register_dict['q']
                 register = StatusRegister(register_dict)
                 self._status_registers[to_bytes(query)] = register
                 for key in register.keys():
                     self._error_map[key] = register
+        else:
+            response_dict = {'command_error': error_input,
+                             'query_error': error_input}
 
         for key, value in response_dict.items():
             self._error_response[key] = to_bytes(value)
-        
-        return response_dict['command_error']
     
     def error_response(self, error_key):
         if error_key in self._error_map:
@@ -277,11 +243,10 @@ class Device(object):
         self._getters[to_bytes(query)] = name, response
 
         query, response, error = setter_triplet
-        error_response = NoResponse.parse_error(error)
         self._setters.append((name,
                               stringparser.Parser(query),
                               to_bytes(response),
-                              to_bytes(error_response)))
+                              to_bytes(error)))
 
     def add_eom(self, type_class, query_termination, response_termination):
         """Add default end of message for a given interface type and resource class.
@@ -322,9 +287,7 @@ class Device(object):
             if response is None:
                 response = self.error_response('command_error')
 
-            if isinstance(response, NoResponse):
-                self._output_buffer = bytearray()
-            else:
+            if response is not NoResponse:
                 self._output_buffer.extend(response)
                 self._output_buffer.extend(eom)
 
@@ -389,7 +352,6 @@ class Device(object):
         if self._output_buffer:
             b, self._output_buffer = self._output_buffer[0:1], self._output_buffer[1:]
             return b
-        self.error_response('query_error')
 
         return b''
 

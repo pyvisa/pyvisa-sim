@@ -48,7 +48,7 @@ class TestAll(BaseTestCase):
         for rn in run_list:
             self._test_device_2(rn)
 
-    def test_devices_3(self):
+    def _test_devices_3(self):
         run_list = (
             'ASRL3::INSTR',
             'USB0::0x1111::0x2222::0x3692::0::INSTR',
@@ -64,36 +64,22 @@ class TestAll(BaseTestCase):
             read_termination='\n',
             write_termination='\r\n' if resource_name.startswith('ASRL') else '\n'
             )
+
         inst.write('FAKE_COMMAND')
         status_reg = inst.query('*ESR?')
-        self.assertEqual(
-            int(status_reg),
-            32,
-            'invalid command test'
-            )
-        with self.assertRaises(VisaIOError, msg='Unexpected read - exception'):
-            inst.write(':VOLT:IMM:AMPL 2.00')
-            inst.read()
+        self.assertEqual(int(status_reg), 32, 'invalid test command')
+
+        inst.write(':VOLT:IMM:AMPL 2.00')
         status_reg = inst.query('*ESR?')
-        self.assertEqual(
-            int(status_reg),
-            4,
-            'unexpected read - status '
-            )
+        self.assertEqual(int(status_reg), 0)
+
         inst.write(':VOLT:IMM:AMPL 0.5')
         status_reg = inst.query('*ESR?')
-        self.assertEqual(
-            int(status_reg),
-            32,
-            'invalid range test - <min'
-            )
+        self.assertEqual(int(status_reg), 32, 'invalid range test - <min')
+
         inst.write(':VOLT:IMM:AMPL 6.5')
         status_reg = inst.query('*ESR?')
-        self.assertEqual(
-            int(status_reg),
-            32,
-            'invalid range test - >max'
-            )
+        self.assertEqual(int(status_reg), 32, 'invalid range test - >max')
 
     def _test_device_3(self, resource_name):
         inst = self.rm.open_resource(
@@ -101,18 +87,13 @@ class TestAll(BaseTestCase):
             read_termination='\n',
             write_termination='\r\n' if resource_name.startswith('ASRL') else '\n'
             )
+
         response = inst.query('FAKE_COMMAND')
-        self.assertEqual(
-            response,
-            'INVALID_COMMAND',
-            'invalid command test - response'
-            )
+        self.assertEqual(response, 'INVALID_COMMAND',
+                         'invalid command test - response')
+
         status_reg = inst.query('*ESR?')
-        self.assertEqual(
-            int(status_reg),
-            32,
-            'invalid command test - status'
-            )
+        self.assertEqual(int(status_reg), 32, 'invalid command test - status')
 
     def _test(self, inst, a, b):
         self.assertEqual(inst.query(a), b, msg=inst.resource_name + ', %r == %r' % (a, b))

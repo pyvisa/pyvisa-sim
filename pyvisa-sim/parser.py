@@ -16,7 +16,7 @@ from contextlib import closing
 import pkg_resources
 import yaml
 
-from .devices import Devices, Device, NoResponse, is_str
+from .devices import Devices, Device, NoResponse
 
 
 #: Version of the specification
@@ -28,9 +28,10 @@ SPEC_VERSION_TUPLE = tuple(map(int, (SPEC_VERSION.split("."))))
 def _s(s):
     """Strip white spaces
     """
-    if is_str(s):
-        return s.strip(' ')
-    return s
+    if s is NoResponse:
+        return s
+
+    return s.strip(' ')
 
 
 def _get_pair(dd):
@@ -41,7 +42,7 @@ def _get_pair(dd):
     :return: (query, response)
     :rtype: (str, str)
     """
-    return _s(dd['q']), _s(dd.get('r', NoResponse()))
+    return _s(dd['q']), _s(dd.get('r', NoResponse))
 
 
 def _get_triplet(dd):
@@ -49,12 +50,10 @@ def _get_triplet(dd):
 
     :param dd: Dialogue dictionary.
     :type dd: Dict[str, str]
-    :param default_error: Default error response
-    :type default_error: str
     :return: (query, response, error response)
-    :rtype: (str, str, str)
+    :rtype: (str, str | NoResponse, str | NoResponse)
     """
-    return _s(dd['q']), _s(dd.get('r', NoResponse())), _s(dd.get('e'))
+    return _s(dd['q']), _s(dd.get('r', NoResponse)), _s(dd.get('e', NoResponse))
 
 
 def _load(content_or_fp):
@@ -160,7 +159,7 @@ def get_device(name, device_dict):
     device = Device(name)
     
     err = device_dict.get('error', {})
-    default_error = device.add_error_handler(err)
+    device.add_error_handler(err)
 
     for itype, eom_dict in device_dict.get('eom', {}).items():
         device.add_eom(itype, *_get_pair(eom_dict))

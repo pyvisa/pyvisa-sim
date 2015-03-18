@@ -98,8 +98,6 @@ devices:
       - q: "*IDN?"
         r: "SCPI,MOCK,VERSION_1.0"
     error:
-      response:
-        command_error: null_response
       status_register:
         - q: "*ESR?"
           command_error: 32
@@ -166,7 +164,7 @@ devices:
         r: "SCPI,MOCK,VERSION_1.0"
     error:
       response:
-        command_error: 'INVALID_COMMAND'
+        command_error: "INVALID_COMMAND"
       status_register:
         - q: "*ESR?"
           command_error: 32

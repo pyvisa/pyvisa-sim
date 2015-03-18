@@ -49,13 +49,13 @@ class SerialInstrumentSession(sessions.Session):
         out = b''
 
         while now - start <= timeout:
-            try:
-                out += self.device.read()
-            except queue.Empty:
+            last = self.device.read()
+
+            if not last:
                 time.sleep(.01)
                 continue
-            finally:
-                now = time.time()
+
+            out += last
 
             if end_in == constants.SerialTermination.termination_char:
                 if out[-1:] == end_char:
