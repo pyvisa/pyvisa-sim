@@ -25,6 +25,11 @@ visa Resource Manager:
 That's all! Except for **@sim**, the code is exactly what you would write in order to
 use the NI-VISA backend for PyVISA.
 
+If you want to load your own file instead of the default, specify the path
+prepended to the @sim string:
+
+    >>> rm = visa.ResourceManager('your_mock_here.yaml@sim')
+
 You can write your own simulators. See :ref:`definitions` to find out how.
 
 

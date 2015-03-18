@@ -62,6 +62,24 @@ or the user tries to set a property outside the right range. For example::
 
 This means that the word **ERROR** is returned.
 
+If you want to further customize how your device handles errors, you can split the 
+error types in two: **command_error** which is returned when fed an invalid command
+or an out of range command, or **query_error** which is returned when trying to
+read an empty buffer. 
+
+    error:
+      response:
+        command_error: null_response
+      status_register:
+        - q: "*ESR?"
+          command_error: 32
+          query_error: 4
+
+In addition to customizing how responses are generated you can specify a status
+register in which errors are tracked. Each element in the list specifies a
+single register so in the example above, if both a **command_error** and
+**query_error** are raised, then querying '*ESR?' will return '36'.
+
 
 dialogues
 ~~~~~~~~~
@@ -74,6 +92,8 @@ by a response. The dialogues item is a list of elements, normally **q**, **r** p
         r: "LSG Serial #1234"
 
 If the response (**r**) is not provided, no response will be given by the device.
+Conversely, if **null_response** is provided for response (**r**), then no response
+will be given by the device as well.
 
 You can have as many items as you want.
 
@@ -120,7 +140,8 @@ Finally you can specify the specs of the property::
           max: 100000
           type: float
 
-You can define the minimum (min) and maximum (max) values, and the type of the value (float, int).
+You can define the minimum (min) and maximum (max) values, and the type of the value
+(float, int, str).
 You can also specify the valid values, for example::
 
         specs:

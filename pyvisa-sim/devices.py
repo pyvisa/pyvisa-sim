@@ -8,46 +8,61 @@
     :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
     :license: MIT, see LICENSE for more details.
 """
-
 try:
     import Queue as queue
 except ImportError:
     import queue
 
 import stringparser
+import sys
 
-from pyvisa import logger, constants, errors
+from pyvisa import logger, constants 
 
 from . import common
+
+
+PY3 = sys.version_info[0] == 3
+
+
+if PY3:
+    string_types = str,
+    text_type = str
+    binary_type = bytes
+else:
+    string_types = basestring,
+    text_type = unicode
+    binary_type = str
+
+
+def is_str(input_value):
+    """Do string type checking across versions of Python
+    """
+    return isinstance(input_value, string_types)
 
 
 def to_bytes(val):
     """Takes a text message and return a tuple
 
     """
-    val = val.replace('\\r', '\r').replace('\\n', '\n')
-    return val.encode()
+    if type(val) in (text_type, binary_type):
+        val = val.replace('\\r', '\r').replace('\\n', '\n')
+        return val.encode()
+    return val
 
 
 class NoResponse(object):
     """Sentinel used for when there should not be a response to a query
     """
-    
-    def replace(self, *args):
-        """Needed to emulate calls for to_bytes method
-        """
-        return self
 
-    def encode(self):
-        """Needed to emulate calls for to_bytes method
-        """
-        return self
-    
-    def strip(self, *args):
-        """Needed to emulate calls for to_bytes method
-        """
-        return self
-    
+    @classmethod
+    def parse_error(cls, error_input):
+        if is_str(error_input):
+            if 'null_response' in error_input:
+                return NoResponse()
+            return error_input
+        else:
+            return error_input
+
 
 class Property(object):
     """A device property
@@ -102,6 +117,30 @@ class Property(object):
         self._value = value
 
 
+class StatusRegister(object):
+    
+    def __init__(self, input_dict):
+        object.__init__(self)
+        self._value = 0
+        self._error_map = {}
+        for name, value in input_dict.items():
+            if name != 'q':
+                self._error_map[name] = int(value)
+    
+    def set(self, error_key):
+        self._value = self._value | self._error_map[error_key]
+
+    def keys(self):
+        return self._error_map.keys()
+
+    @property
+    def value(self):
+        return to_bytes(str(self._value))
+    
+    def clear(self):
+        self._value = 0
+
+
 class Device(object):
     """A representation of a responsive device
 
@@ -122,13 +161,15 @@ class Device(object):
     # :type: bytes
     _response_eom = None
 
-    def __init__(self, name, error_response):
+    def __init__(self, name):
 
         # Name of the device.
         self.name = name
 
         # :type: bytes
-        self.error_response = to_bytes(error_response)
+        self._error_response = {}
+        self._error_map = {}
+        self._status_registers = {}
 
         #: Stores the specific end of messages for device.
         #: TYPE CLASS -> (query termination, response termination)
@@ -175,6 +216,44 @@ class Device(object):
         self._query_eom, self._response_eom = self._eoms[(p['interface_type'],
                                                           p['resource_class'])]
 
+    def add_error_handler(self, error_input):
+        """Add error handler to the device
+        """
+        response_dict = {}
+        if is_str(error_input):
+            error_response = NoResponse.parse_error(error_input)
+            response_dict = {
+                'command_error': error_response,
+                'query_error': error_response,
+                }
+        elif type(error_input) == dict:
+            error_response = error_input.get('response', {})
+            response_dict = {
+                'command_error': NoResponse.parse_error(
+                    error_response.get('command_error', NoResponse())
+                    ),
+                'query_error': NoResponse.parse_error(
+                    error_response.get('query_error', NoResponse())
+                    ),
+                }
+            register_list = error_input.get('status_register', [])
+            for register_dict in register_list:
+                query = register_dict.get('q')
+                register = StatusRegister(register_dict)
+                self._status_registers[to_bytes(query)] = register
+                for key in register.keys():
+                    self._error_map[key] = register
+
+        for key, value in response_dict.items():
+            self._error_response[key] = to_bytes(value)
+        
+        return response_dict['command_error']
+    
+    def error_response(self, error_key):
+        if error_key in self._error_map:
+            self._error_map[error_key].set(error_key)
+        return self._error_response.get(error_key)
+
     def add_dialogue(self, query, response):
         """Add dialogue to device.
 
@@ -198,10 +277,11 @@ class Device(object):
         self._getters[to_bytes(query)] = name, response
 
         query, response, error = setter_triplet
+        error_response = NoResponse.parse_error(error)
         self._setters.append((name,
                               stringparser.Parser(query),
                               to_bytes(response),
-                              to_bytes(error)))
+                              to_bytes(error_response)))
 
     def add_eom(self, type_class, query_termination, response_termination):
         """Add default end of message for a given interface type and resource class.
@@ -234,20 +314,22 @@ class Device(object):
         if not self._input_buffer.endswith(self._query_eom):
             return
 
-        query = bytes(self._input_buffer[:-l])
-        response = self._match(query)
-        eom = self._response_eom
+        try:
+            query = bytes(self._input_buffer[:-l])
+            response = self._match(query)
+            eom = self._response_eom
 
-        if response is None:
-            response = self.error_response
+            if response is None:
+                response = self.error_response('command_error')
 
-        if isinstance(response, NoResponse):
-            self._output_buffer = bytearray()
-        else:
-            self._output_buffer.extend(response)
-            self._output_buffer.extend(eom)
+            if isinstance(response, NoResponse):
+                self._output_buffer = bytearray()
+            else:
+                self._output_buffer.extend(response)
+                self._output_buffer.extend(eom)
 
-        self._input_buffer = bytearray()
+        finally:
+            self._input_buffer = bytearray()
 
     def _match(self, query):
         """Tries to match in dialogues, getters and setters
@@ -259,29 +341,32 @@ class Device(object):
         """
 
         # Try to match in the queries
-        try:
+        if query in self._dialogues:
             response = self._dialogues[query]
             logger.debug('Found response in queries: %s' % repr(response))
 
             return response
 
-        except KeyError:
-            pass
-
         # Now in the getters
-        try:
+        if query in self._getters:
             name, response = self._getters[query]
             logger.debug('Found response in getter of %s' % name)
 
             return response.format(self._properties[name].value).encode('utf-8')
 
-        except KeyError:
-            pass
+        # Try to match in the status registers
+        if query in self._status_registers:
+            register = self._status_registers[query]
+            response = register.value
+            logger.debug('Found response in status register: %s' % repr(response))
+            register.clear()
+
+            return response
 
         q = query.decode('utf-8')
 
         # Finally in the setters, this will be slow.
-        for name, parser, response, err in self._setters:
+        for name, parser, response, error_response in self._setters:
             try:
                 value = parser(q)
                 logger.debug('Found response in setter of %s' % name)
@@ -291,9 +376,10 @@ class Device(object):
             try:
                 self._properties[name].set_value(value)
                 return response
-
             except ValueError:
-                return err
+                if isinstance(error_response, bytes):
+                    return error_response
+                return self.error_response('command_error')
 
         return None
 
@@ -303,11 +389,7 @@ class Device(object):
         if self._output_buffer:
             b, self._output_buffer = self._output_buffer[0:1], self._output_buffer[1:]
             return b
-        elif isinstance(self.error_response, bytes):
-            self._output_buffer.extend(self.error_response)
-            self._output_buffer.extend(self._response_eom)
-            b, self._output_buffer = self._output_buffer[0:1], self._output_buffer[1:]
-            return b
+        self.error_response('query_error')
 
         return b''
 
