@@ -53,9 +53,10 @@ class SerialInstrumentSession(sessions.Session):
 
             if not last:
                 time.sleep(.01)
-                continue
-
-            out += last
+            else:
+                out += last
+            
+            now = time.time()
 
             if end_in == constants.SerialTermination.termination_char:
                 if out[-1:] == end_char:

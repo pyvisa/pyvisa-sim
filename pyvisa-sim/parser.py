@@ -242,6 +242,6 @@ class Loader(object):
         if filename is None:
             data = self.data
         else:
-            data = self.load(filename, bundled, required_version)
+            data = self.load(filename, bundled, None, required_version)
 
         return data['devices'][device]

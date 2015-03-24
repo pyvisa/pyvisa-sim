@@ -49,9 +49,10 @@ class TCPIPInstrumentSession(sessions.Session):
 
             if not last:
                 time.sleep(.01)
-                continue
-
-            out += last
+            else:
+                out += last
+            
+            now = time.time()
 
             if enabled:
                 if len(out) > 0 and out[-1] == end_char:

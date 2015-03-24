@@ -69,6 +69,10 @@ class TestAll(BaseTestCase):
         status_reg = inst.query('*ESR?')
         self.assertEqual(int(status_reg), 32, 'invalid test command')
 
+        with self.assertRaises(VisaIOError, msg='Unexpected read - exception'):
+            inst.write(':VOLT:IMM:AMPL 2.00')
+            inst.read()
+
         inst.write(':VOLT:IMM:AMPL 2.00')
         status_reg = inst.query('*ESR?')
         self.assertEqual(int(status_reg), 0)
