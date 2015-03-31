@@ -239,14 +239,16 @@ class Device(object):
         """
         self._properties[name] = Property(name, default_value, specs)
 
-        query, response = getter_pair
-        self._getters[to_bytes(query)] = name, response
+        if getter_pair:
+            query, response = getter_pair
+            self._getters[to_bytes(query)] = name, response
 
-        query, response, error = setter_triplet
-        self._setters.append((name,
-                              stringparser.Parser(query),
-                              to_bytes(response),
-                              to_bytes(error)))
+        if setter_triplet:
+            query, response, error = setter_triplet
+            self._setters.append((name,
+                                  stringparser.Parser(query),
+                                  to_bytes(response),
+                                  to_bytes(error)))
 
     def add_eom(self, type_class, query_termination, response_termination):
         """Add default end of message for a given interface type and resource class.

@@ -192,16 +192,11 @@ devices:
           min: 1
           max: 6
           type: float
-      rail:
+      read_only:
         default: P6V
         getter:
           q: "INST?"
           r: "{:s}"
-        setter:
-          q: "INST {:s}"
-        specs:
-            valid: ["P6V", "P25V", "N25V"]
-            type: str
       output_enabled:
         default: 0
         getter:
