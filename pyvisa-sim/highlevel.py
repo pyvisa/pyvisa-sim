@@ -134,26 +134,10 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         """
         return self._register(self), constants.StatusCode.success
 
-    def find_next(self, find_list):
-        """Returns the next resource from the list of resources found during a previous call to find_resources().
+    def list_resources(self, session, query='?*::INSTR'):
+        """Returns a tuple of all connected devices matching query.
 
-        Corresponds to viFindNext function of the VISA library.
-
-        :param find_list: Describes a find list. This parameter must be created by find_resources().
-        :return: Returns a string identifying the location of a device, return value of the library call.
-        :rtype: unicode (Py2) or str (Py3), :class:`pyvisa.constants.StatusCode`
-        """
-        return next(find_list), constants.StatusCode.success
-
-    def find_resources(self, session, query):
-        """Queries a VISA system to locate the resources associated with a specified interface.
-
-        Corresponds to viFindRsrc function of the VISA library.
-
-        :param session: Unique logical identifier to a session (unused, just to uniform signatures).
-        :param query: A regular expression followed by an optional logical expression. Use '?*' for all.
-        :return: find_list, return_counter, instrument_description, return value of the library call.
-        :rtype: ViFindList, int, unicode (Py2) or str (Py3), :class:`pyvisa.constants.StatusCode`
+        :param query: regular expression used to match devices.
         """
 
         # TODO: Query not implemented
@@ -161,9 +145,11 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         # For each session type, ask for the list of connected resources and merge them into a single list.
 
         resources = self.devices.list_resources()
-        count = len(resources)
-        resources = iter(resources)
-        return resources, count, next(resources), constants.StatusCode.success
+
+        if resources:
+            return resources
+
+        raise errors.VisaIOError(errors.StatusCode.error_resource_not_found.value)
 
     def parse_resource(self, session, resource_name):
         """Parse a resource string to get the interface information.
