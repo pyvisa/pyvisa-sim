@@ -28,7 +28,7 @@ from . import sessions
 class SerialInstrumentSession(sessions.Session):
 
     def after_parsing(self):
-        self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed['board'])
+        self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed.board)
 
     def read(self, count):
 

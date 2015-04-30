@@ -13,10 +13,10 @@ from __future__ import division, unicode_literals, print_function, absolute_impo
 
 import random
 
-from pyvisa import constants, highlevel
+from pyvisa import constants, highlevel, rname
 from pyvisa.errors import VisaIOError, VisaIOWarning
+from pyvisa.compat import OrderedDict
 
-from . import common
 from . import parser
 from . import sessions
 
@@ -38,6 +38,18 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
 
     Importantly, the user is unaware of this. PyVisaLibrary behaves for the user just as NIVisaLibrary.
     """
+
+    @staticmethod
+    def get_debug_info():
+        """Return a list of lines with backend info.
+        """
+        from . import __version__
+        from .parser import SPEC_VERSION
+        d = OrderedDict()
+        d['Version'] = '%s' % __version__
+        d['Spec version'] = SPEC_VERSION
+
+        return d
 
     def _init(self):
 
@@ -93,12 +105,12 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
             raise ValueError('open_timeout (%r) must be an integer (or compatible type)' % open_timeout)
 
         try:
-            parsed = common.parse_resource_name(resource_name)
-        except common.InvalidResourceName:
+            parsed = rname.parse_resource_name(resource_name)
+        except rname.InvalidResourceName:
             return 0, constants.StatusCode.error_invalid_resource_name
 
         # Loops through all session types, tries to parse the resource name and if ok, open it.
-        cls = sessions.Session.get_session_class(parsed['interface_type'], parsed['resource_class'])
+        cls = sessions.Session.get_session_class(parsed.interface_type_const, parsed.resource_class)
 
         sess = cls(session, resource_name, parsed)
 
@@ -176,11 +188,11 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         :rtype: :class:`pyvisa.highlevel.ResourceInfo`, :class:`pyvisa.constants.StatusCode`
         """
         try:
-            parsed = common.parse_resource_name(resource_name)
+            parsed = rname.parse_resource_name(resource_name)
 
-            return (highlevel.ResourceInfo(parsed['interface_type'],
-                                           parsed['board'],
-                                           parsed['resource_class'], None, None),
+            return (highlevel.ResourceInfo(parsed.interface_type_const,
+                                           parsed.board,
+                                           parsed.resource_class, None, None),
                     constants.StatusCode.success)
         except ValueError:
             return 0, constants.StatusCode.error_invalid_resource_name

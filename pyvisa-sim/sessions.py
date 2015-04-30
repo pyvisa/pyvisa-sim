@@ -16,9 +16,9 @@ try:
 except ImportError:
     import queue
 
-from pyvisa import constants, attributes, logger
+from pyvisa import constants, attributes, rname
 
-from . import common
+from .common import logger
 
 
 class Session(object):
@@ -70,12 +70,12 @@ class Session(object):
 
     def __init__(self, resource_manager_session, resource_name, parsed=None):
         if parsed is None:
-            parsed = common.parse_resource_name(resource_name)
+            parsed = rname.parse_resource_name(resource_name)
         self.parsed = parsed
         self.attrs = {constants.VI_ATTR_RM_SESSION: resource_manager_session,
-                      constants.VI_ATTR_RSRC_NAME: parsed['canonical_resource_name'],
-                      constants.VI_ATTR_RSRC_CLASS: parsed['resource_class'],
-                      constants.VI_ATTR_INTF_TYPE: parsed['interface_type']}
+                      constants.VI_ATTR_RSRC_NAME: str(parsed),
+                      constants.VI_ATTR_RSRC_CLASS: parsed.resource_class,
+                      constants.VI_ATTR_INTF_TYPE: parsed.interface_type_const}
         self.after_parsing()
 
         #: devices.Device

@@ -27,9 +27,9 @@ from . import sessions
 class GPIBInstrumentSession(sessions.Session):
 
     def after_parsing(self):
-        self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed['board'])
-        self.attrs[constants.VI_ATTR_GPIB_PRIMARY_ADDR] = int(self.parsed['primary_address'])
-        self.attrs[constants.VI_ATTR_GPIB_SECONDARY_ADDR] = int(self.parsed['secondary_address'])
+        self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed.board)
+        self.attrs[constants.VI_ATTR_GPIB_PRIMARY_ADDR] = int(self.parsed.primary_address)
+        self.attrs[constants.VI_ATTR_GPIB_SECONDARY_ADDR] = int(self.parsed.secondary_address)
 
     def read(self, count):
         end_char, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR)

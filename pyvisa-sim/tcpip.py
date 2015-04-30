@@ -30,9 +30,9 @@ class TCPIPInstrumentSession(sessions.Session):
         super(TCPIPInstrumentSession, self).__init__(resource_manager_session, resource_name, parsed)
 
     def after_parsing(self):
-        self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed['board'])
-        self.attrs[constants.VI_ATTR_TCPIP_ADDR] = self.parsed['host_address']
-        self.attrs[constants.VI_ATTR_TCPIP_DEVICE_NAME] = self.parsed['lan_device_name']
+        self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed.board)
+        self.attrs[constants.VI_ATTR_TCPIP_ADDR] = self.parsed.host_address
+        self.attrs[constants.VI_ATTR_TCPIP_DEVICE_NAME] = self.parsed.lan_device_name
 
     def read(self, count):
         end_char, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR)

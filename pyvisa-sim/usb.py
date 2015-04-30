@@ -30,11 +30,11 @@ class USBInstrumentSession(sessions.Session):
         super(USBInstrumentSession, self).__init__(resource_manager_session, resource_name, parsed)
 
     def after_parsing(self):
-        self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed['board'])
-        self.attrs[constants.VI_ATTR_MANF_ID] = self.parsed['manufacturer_id']
-        self.attrs[constants.VI_ATTR_MODEL_CODE] = self.parsed['model_code']
-        self.attrs[constants.VI_ATTR_USB_SERIAL_NUM] = self.parsed['serial_number']
-        self.attrs[constants.VI_ATTR_USB_INTFC_NUM] = int(self.parsed['board'])
+        self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed.board)
+        self.attrs[constants.VI_ATTR_MANF_ID] = self.parsed.manufacturer_id
+        self.attrs[constants.VI_ATTR_MODEL_CODE] = self.parsed.model_code
+        self.attrs[constants.VI_ATTR_USB_SERIAL_NUM] = self.parsed.serial_number
+        self.attrs[constants.VI_ATTR_USB_INTFC_NUM] = int(self.parsed.board)
 
     def read(self, count):
         end_char, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR)
