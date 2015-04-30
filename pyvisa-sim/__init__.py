@@ -13,5 +13,15 @@ from __future__ import division, unicode_literals, print_function, absolute_impo
 
 from .highlevel import SimVisaLibrary
 
+import pkg_resources
+
+__version__ = "unknown"
+try:                # pragma: no cover
+    __version__ = pkg_resources.get_distribution('pyvisa-sim').version
+except:             # pragma: no cover
+    pass    # we seem to have a local copy without any repository control or installed without setuptools
+            # so the reported version will be __unknown__
+
+
 WRAPPER_CLASS = SimVisaLibrary
 
