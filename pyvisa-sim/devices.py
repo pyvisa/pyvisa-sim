@@ -11,9 +11,9 @@
 
 import stringparser
 
-from pyvisa import logger, constants
+from pyvisa import constants, rname
 
-from . import common
+from .common import logger
 
 
 def to_bytes(val):
@@ -183,10 +183,10 @@ class Device(object):
 
     @resource_name.setter
     def resource_name(self, value):
-        p = common.parse_resource_name(value)
-        self._resource_name = p['canonical_resource_name']
-        self._query_eom, self._response_eom = self._eoms[(p['interface_type'],
-                                                          p['resource_class'])]
+        p = rname.parse_resource_name(value)
+        self._resource_name = str(p)
+        self._query_eom, self._response_eom = self._eoms[(p.interface_type_const,
+                                                          p.resource_class)]
 
     def add_error_handler(self, error_input):
         """Add error handler to the device
