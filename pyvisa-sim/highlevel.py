@@ -12,6 +12,7 @@
 from __future__ import division, unicode_literals, print_function, absolute_import
 
 import random
+from traceback import format_exc
 
 from pyvisa import constants, highlevel, rname
 import pyvisa.errors as errors
@@ -63,7 +64,8 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
             else:
                 self.devices = parser.get_devices(self.library_path, False)
         except Exception as e:
-            raise Exception('Could not parse definitions file. %r' % e)
+            msg = 'Could not parse definitions file. %r'
+            raise type(e)(msg % format_exc())
 
     def _register(self, obj):
         """Creates a random but unique session handle for a session object,

@@ -12,6 +12,7 @@
 import os
 from io import open, StringIO
 from contextlib import closing
+from traceback import format_exc
 
 import pkg_resources
 import yaml
@@ -82,7 +83,7 @@ def _load(content_or_fp):
     try:
         data = yaml.load(content_or_fp, Loader=yaml.loader.BaseLoader)
     except Exception as e:
-        raise Exception('Malformed yaml file:\n%r' % e)
+        raise type(e)('Malformed yaml file:\n%r' % format_exc())
 
     try:
         ver = data['spec']
@@ -158,7 +159,7 @@ def get_device(name, device_dict, loader):
     :param device_dict: device dictionary
     :rtype: Device
     """
-    device = Device(name)
+    device = Device(name, device_dict.get('delimiter', ';'))
     
     err = device_dict.get('error', {})
     device.add_error_handler(err)
@@ -207,7 +208,8 @@ class Loader(object):
     def load(self, filename, bundled, parent, required_version):
 
         if self._bundled and not bundled:
-            raise ValueError('Only other bundled files can be loaded from bundled files.')
+            msg = 'Only other bundled files can be loaded from bundled files.'
+            raise ValueError(msg)
 
         if parent is None:
             parent = self._filename
@@ -231,7 +233,9 @@ class Loader(object):
         ver = _ver_to_tuple(data['spec'])[0]
         if ver != required_version:
             raise ValueError('Invalid version in %s (bundled = %s). '
-                             'Expected %s, found %s,' % (filename, bundled, required_version, ver))
+                             'Expected %s, found %s,' % (filename, bundled,
+                                                         required_version, ver)
+                             )
 
         self._cache[(filename, bundled)] = data
 
