@@ -53,6 +53,7 @@ class SerialInstrumentSession(sessions.Session):
 
             if not last:
                 time.sleep(.01)
+                now = time.time()
                 continue
 
             out += last
@@ -109,4 +110,3 @@ class SerialInstrumentSession(sessions.Session):
 
             elif not asrl_end == constants.SerialTermination.none:
                 raise ValueError('Unknown value for VI_ATTR_ASRL_END_OUT')
-

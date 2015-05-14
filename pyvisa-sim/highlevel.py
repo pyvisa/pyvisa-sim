@@ -14,7 +14,7 @@ from __future__ import division, unicode_literals, print_function, absolute_impo
 import random
 
 from pyvisa import constants, highlevel, rname
-from pyvisa import errors
+import pyvisa.errors as errors
 from pyvisa.compat import OrderedDict
 
 from . import parser

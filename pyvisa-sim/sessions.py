@@ -140,5 +140,3 @@ class Session(object):
             return constants.StatusCode.error_nonsupported_attribute_state
 
         return constants.StatusCode.success
-
-
