@@ -27,6 +27,10 @@ class TestAll(BaseTestCase):
                           'USB0::0x1111::0x2222::0x3692::0::INSTR',
                           'TCPIP0::localhost:3333::inst0::INSTR',
                           'GPIB0::10::65535::INSTR',
+                          'ASRL4::INSTR',
+                          'USB0::0x1111::0x2222::0x4444::0::INSTR',
+                          'TCPIP0::localhost:4444::inst0::INSTR',
+                          'GPIB0::4::65535::INSTR'
                          )))
 
     def test_devices(self):
@@ -60,7 +64,7 @@ class TestAll(BaseTestCase):
         for rn in run_list:
             self._test_device_3(rn)
 
-    def test_devices_4(self):
+    def test_devices_timeouts(self):
         # Test timeout.
         run_list = (
                 'ASRL3::INSTR',
@@ -69,7 +73,17 @@ class TestAll(BaseTestCase):
                 'GPIB0::10::65535::INSTR',
                 )
         for rn in run_list:
-            self._test_device_4(rn)
+            self._test_devices_timeouts(rn)
+
+    def test_devices_4(self):
+        run_list = (
+            'ASRL4::INSTR',
+            'USB0::0x1111::0x2222::0x4444::0::INSTR',
+            'TCPIP0::localhost:4444::inst0::INSTR',
+            'GPIB0::4::INSTR',
+            )
+        for rn in run_list:
+            self._test_devices_4(rn)
 
     def _test(self, inst, a, b):
         query = inst.query(a)
@@ -150,6 +164,19 @@ class TestAll(BaseTestCase):
         status_reg = inst.query('*ESR?')
         self.assertEqual(int(status_reg), 32, 'invalid command test - status')
 
-    def _test_device_4(self, resource_name):
+    def _test_devices_timeouts(self, resource_name):
         inst = self.rm.open_resource(resource_name, timeout=0.1)
         self.assertRaises(VisaIOError, inst.read)
+
+    def _test_devices_4(self, resource_name):
+        inst = self.rm.open_resource(
+            resource_name,
+            read_termination='\n',
+            write_termination='\r\n' if resource_name.startswith('ASRL') else '\n'
+            )
+
+        self._test(inst, ":SYST:ERR?", '0, No Error')
+        inst.write("FAKE COMMAND")
+        self._test(inst, ":SYST:ERR?", '1, Command error')
+        inst.write(":VOLT:IMM:AMPL 0")
+        self._test(inst, ":SYST:ERR?", '1, Command error')
