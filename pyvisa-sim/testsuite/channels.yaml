@@ -1,0 +1,107 @@
+spec: "1.1"
+devices:
+  device 1:
+    eom:
+      ASRL INSTR:
+        q: "\r\n"
+        r: "\n"
+      USB INSTR:
+        q: "\n"
+        r: "\n"
+      TCPIP INSTR:
+        q: "\n"
+        r: "\n"
+      GPIB INSTR:
+        q: "\n"
+        r: "\n"
+    error: ERROR
+    dialogues:
+      - q: "?IDN"
+        r: "LSG Serial #1234"
+    properties:
+      selected_channel:
+        default: 1
+        getter:
+          q: 'I?'
+          r: '{}'
+        setter:
+          q: 'I {}'
+    channels:
+      type1:
+        ids: [1, 2]
+        can_select: False
+        properties:
+          frequency:
+            default: 1.0
+            getter:
+              q: 'F?'
+              r: '{:.3f}'
+            setter:
+              q: 'F {:.3f}'
+            specs:
+              type: float
+              min: 1.0
+              max: 10.0
+
+  device 2:
+    eom:
+      ASRL INSTR:
+        q: "\r\n"
+        r: "\n"
+      USB INSTR:
+        q: "\n"
+        r: "\n"
+      TCPIP INSTR:
+        q: "\n"
+        r: "\n"
+      GPIB INSTR:
+        q: "\n"
+        r: "\n"
+    dialogues:
+      - q: "*IDN?"
+        r: "SCPI,MOCK,VERSION_1.0"
+    channels:
+      channel:
+        ids: [1, 2, 3]
+        can_select: True
+        properties:
+          voltage:
+            default: 1.0
+            getter:
+              q: "CH {ch_id}:VOLT:IMM:AMPL?"
+              r: "{:+.8E}"
+            setter:
+              q: "CH {ch_id}:VOLT:IMM:AMPL {:.3f}"
+            specs:
+              min: 1
+              max: 6
+              type: float
+          output_enabled:
+            default: 0
+            getter:
+              q: "CH {ch_id}:OUTP?"
+              r: "{:d}"
+            setter:
+              q: "CH {ch_id}:OUTP {:d}"
+            specs:
+              valid: [0, 1]
+              type: int
+
+
+resources:
+  ASRL1::INSTR:
+    device: device 1
+  USB::0x1111::0x2222::0x1234::INSTR:
+    device: device 1
+  TCPIP::localhost:1111::INSTR:
+    device: device 1
+  GPIB::8::INSTR:
+    device: device 1
+  ASRL2::INSTR:
+    device: device 2
+  USB::0x1111::0x2222::0x2468::INSTR:
+    device: device 2
+  TCPIP::localhost:2222::INSTR:
+    device: device 2
+  GPIB::9::INSTR:
+    device: device 2
