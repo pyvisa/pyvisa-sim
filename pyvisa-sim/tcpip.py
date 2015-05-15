@@ -77,4 +77,4 @@ class TCPIPSocketSession(BaseTCPIPSession):
     def after_parsing(self):
         self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed.board)
         self.attrs[constants.VI_ATTR_TCPIP_ADDR] = self.parsed.host_address
-        self.attrs[constants.VI_ATTR_TCPIP_PORT] = self.parsed.port
+        self.attrs[constants.VI_ATTR_TCPIP_PORT] = int(self.parsed.port)
