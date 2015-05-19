@@ -57,7 +57,8 @@ class ChDict(dict):
         __default__.
 
         """
-        return {k.format(ch_id=key): v for k, v in self['__default__'].items()}
+        return {k.decode('utf-8').format(ch_id=key).encode('utf-8'): v
+                for k, v in self['__default__'].items()}
 
 
 class Channels(Component):
@@ -150,6 +151,7 @@ class Channels(Component):
 
                 response = self._match_getters(query,
                                                self._getters[ch_id])
+
                 if response is not None:
                     return response
 
