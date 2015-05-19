@@ -11,6 +11,9 @@ devices:
       TCPIP INSTR:
         q: "\n"
         r: "\n"
+      TCPIP SOCKET:
+        q: "\n"
+        r: "\n"
       GPIB INSTR:
         q: "\n"
         r: "\n"
@@ -216,6 +219,8 @@ resources:
   USB::0x1111::0x2222::0x1234::INSTR:
     device: device 1
   TCPIP::localhost:1111::INSTR:
+    device: device 1
+  TCPIP::localhost::10001::SOCKET:
     device: device 1
   GPIB::8::INSTR:
     device: device 1

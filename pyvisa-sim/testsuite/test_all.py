@@ -17,6 +17,7 @@ class TestAll(BaseTestCase):
                           'ASRL1::INSTR',
                           'USB0::0x1111::0x2222::0x1234::0::INSTR',
                           'TCPIP0::localhost:1111::inst0::INSTR',
+                          'TCPIP0::localhost::10001::SOCKET',
                           'GPIB0::8::65535::INSTR',
                           'ASRL2::INSTR',
                           'USB0::0x1111::0x2222::0x2468::0::INSTR',
@@ -33,7 +34,8 @@ class TestAll(BaseTestCase):
             'GPIB0::8::65535::INSTR',
             'TCPIP0::localhost:1111::inst0::INSTR',
             'ASRL1::INSTR',
-            'USB0::0x1111::0x2222::0x1234::0::INSTR'
+            'USB0::0x1111::0x2222::0x1234::0::INSTR',
+            'TCPIP0::localhost::10001::SOCKET',
             )
         for rn in run_list:
             self._test_device(rn)
@@ -57,7 +59,7 @@ class TestAll(BaseTestCase):
             )
         for rn in run_list:
             self._test_device_3(rn)
-    
+
     def _test_device_2(self, resource_name):
         inst = self.rm.open_resource(
             resource_name,
