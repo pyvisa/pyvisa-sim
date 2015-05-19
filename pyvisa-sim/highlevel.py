@@ -14,7 +14,7 @@ from __future__ import division, unicode_literals, print_function, absolute_impo
 import random
 
 from pyvisa import constants, highlevel, rname
-from pyvisa.errors import VisaIOError, VisaIOWarning
+from pyvisa import errors
 from pyvisa.compat import OrderedDict
 
 from . import parser
@@ -163,40 +163,6 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
 
         raise errors.VisaIOError(errors.StatusCode.error_resource_not_found.value)
 
-    def parse_resource(self, session, resource_name):
-        """Parse a resource string to get the interface information.
-
-        Corresponds to viParseRsrc function of the VISA library.
-
-        :param session: Resource Manager session (should always be the Default Resource Manager for VISA
-                        returned from open_default_resource_manager()).
-        :param resource_name: Unique symbolic name of a resource.
-        :return: Resource information with interface type and board number, return value of the library call.
-        :rtype: :class:`pyvisa.highlevel.ResourceInfo`, :class:`pyvisa.constants.StatusCode`
-        """
-        return self.parse_resource_extended(session, resource_name)
-
-    def parse_resource_extended(self, session, resource_name):
-        """Parse a resource string to get extended interface information.
-
-        Corresponds to viParseRsrcEx function of the VISA library.
-
-        :param session: Resource Manager session (should always be the Default Resource Manager for VISA
-                        returned from open_default_resource_manager()).
-        :param resource_name: Unique symbolic name of a resource.
-        :return: Resource information, return value of the library call.
-        :rtype: :class:`pyvisa.highlevel.ResourceInfo`, :class:`pyvisa.constants.StatusCode`
-        """
-        try:
-            parsed = rname.parse_resource_name(resource_name)
-
-            return (highlevel.ResourceInfo(parsed.interface_type_const,
-                                           parsed.board,
-                                           parsed.resource_class, None, None),
-                    constants.StatusCode.success)
-        except ValueError:
-            return 0, constants.StatusCode.error_invalid_resource_name
-
     def read(self, session, count):
         """Reads data from device or interface synchronously.
 
@@ -216,8 +182,8 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         try:
             chunk, status = sess.read(count)
             if status == constants.StatusCode.error_timeout:
-                raise VisaIOError(constants.VI_ERROR_TMO)
-            return (chunk, status)
+                raise errors.VisaIOError(constants.VI_ERROR_TMO)
+            return chunk, status
         except AttributeError:
             return b'', constants.StatusCode.error_nonsupported_operation
 
