@@ -233,7 +233,6 @@ devices:
       error_queue:
         - q: ':SYST:ERR?'
           default: '0, No Error'
-          strict: False
           command_error: '1, Command error'
     properties:
       voltage:

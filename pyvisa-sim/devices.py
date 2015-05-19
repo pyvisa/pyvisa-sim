@@ -52,13 +52,10 @@ class ErrorQueue(object):
                 continue
             self._error_map[name] = to_bytes(value)
         self._default = to_bytes(values['default'])
-        self._strict = True if values['strict'] == 'True' else False
 
     def append(self, err):
         if err in self._error_map:
             self._queue.append(self._error_map[err])
-        elif not self._strict:
-            self._queue.append(err)
 
     @property
     def value(self):
