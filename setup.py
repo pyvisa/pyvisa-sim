@@ -28,11 +28,11 @@ long_description = '\n\n'.join([read('README'),
 
 __doc__ = long_description
 
-requirements = ['stringparser', 'pyvisa>1.5', 'pyyaml']
+requirements = ['stringparser', 'pyvisa>=1.7', 'pyyaml']
 
 setup(name='PyVISA-sim',
       description='Simulated backend for PyVISA implementing TCPIP, GPIB, RS232, and USB resources',
-      version='0.2.dev0',
+      version='0.2.dev2',
       long_description=long_description,
       author='Hernan E. Grecco',
       author_email='hernan.grecco@gmail.com',
