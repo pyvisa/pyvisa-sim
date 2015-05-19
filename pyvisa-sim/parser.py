@@ -188,7 +188,7 @@ def get_device(name, device_dict, loader, resource_dict):
     :param device_dict: device dictionary
     :rtype: Device
     """
-    device = Device(name, device_dict.get('delimiter', ';'))
+    device = Device(name, device_dict.get('delimiter', ';').encode('utf-8'))
 
     device_dict = get_bases(device_dict, loader)
 
