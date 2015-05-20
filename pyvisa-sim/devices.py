@@ -40,6 +40,34 @@ class StatusRegister(object):
         self._value = 0
 
 
+class ErrorQueue(object):
+
+    def __init__(self, values):
+
+        super(ErrorQueue, self).__init__()
+        self._queue = []
+        self._error_map = {}
+        for name, value in values.items():
+            if name in ('q', 'default', 'strict'):
+                continue
+            self._error_map[name] = to_bytes(value)
+        self._default = to_bytes(values['default'])
+
+    def append(self, err):
+        if err in self._error_map:
+            self._queue.append(self._error_map[err])
+
+    @property
+    def value(self):
+        if self._queue:
+            return self._queue.pop(0)
+        else:
+            return self._default
+
+    def clear(self):
+        self._queue = []
+
+
 class Device(Component):
     """A representation of a responsive device
 
@@ -97,6 +125,10 @@ class Device(Component):
         #: :type: bytearray
         self._input_buffer = bytearray()
 
+        #: Mapping an error queue query and the queue.
+        #: :type: dict
+        self._error_queues = {}
+
     @property
     def resource_name(self):
         """Assigned resource name
@@ -136,6 +168,14 @@ class Device(Component):
                 self._status_registers[to_bytes(query)] = register
                 for key in register.keys():
                     self._error_map[key] = register
+
+            queue_list = error_input.get('error_queue', [])
+
+            for queue_dict in queue_list:
+                query = queue_dict['q']
+                err_queue = ErrorQueue(queue_dict)
+                self._error_queues[to_bytes(query)] = err_queue
+
         else:
             response_dict = {'command_error': error_input,
                              'query_error': error_input}
@@ -146,6 +186,10 @@ class Device(Component):
     def error_response(self, error_key):
         if error_key in self._error_map:
             self._error_map[error_key].set(error_key)
+
+        for q in self._error_queues.values():
+            q.append(error_key)
+
         return self._error_response.get(error_key)
 
     def add_eom(self, type_class, query_termination, response_termination):
@@ -230,6 +274,10 @@ class Device(Component):
         if response is not None:
             return response
 
+        response = self._match_errors_queues(query)
+        if response is not None:
+            return response
+
         response = self._match_setters(query)
         if response is not None:
             return response
@@ -256,6 +304,22 @@ class Device(Component):
             logger.debug('Found response in status register: %s',
                          repr(response))
             register.clear()
+
+            return response
+
+    def _match_errors_queues(self, query):
+        """Tries to match in error queues
+
+        :param query: message tuple
+        :type query: Tuple[bytes]
+        :return: response if found or None
+        :rtype: Tuple[bytes] | None
+        """
+        if query in self._error_queues:
+            queue = self._error_queues[query]
+            response = queue.value
+            logger.debug('Found response in error queue: %s',
+                         repr(response))
 
             return response
 
