@@ -212,6 +212,40 @@ devices:
           r: "{:d}"
         setter:
           q: "OUTP {:d}"
+  device 4:
+    eom:
+      ASRL INSTR:
+        q: "\r\n"
+        r: "\n"
+      USB INSTR:
+        q: "\n"
+        r: "\n"
+      TCPIP INSTR:
+        q: "\n"
+        r: "\n"
+      GPIB INSTR:
+        q: "\n"
+        r: "\n"
+    dialogues:
+      - q: "*IDN?"
+        r: "SCPI,MOCK,VERSION_1.0"
+    error:
+      error_queue:
+        - q: ':SYST:ERR?'
+          default: '0, No Error'
+          command_error: '1, Command error'
+    properties:
+      voltage:
+        default: 1.0
+        getter:
+          q: ":VOLT:IMM:AMPL?"
+          r: "{:+.8E}"
+        setter:
+          q: ":VOLT:IMM:AMPL {:.3f}"
+        specs:
+          min: 1
+          max: 6
+          type: float
 
 resources:
   ASRL1::INSTR:
@@ -240,3 +274,11 @@ resources:
     device: device 3
   GPIB::10::INSTR:
     device: device 3
+  ASRL4::INSTR:
+    device: device 4
+  USB::0x1111::0x2222::0x4444::INSTR:
+    device: device 4
+  TCPIP::localhost:4444::INSTR:
+    device: device 4
+  GPIB::4::INSTR:
+    device: device 4
