@@ -2,13 +2,36 @@ PyVISA-sim Changelog
 ====================
 
 
-0.2 (unreleased)
+0.3 (unreleased)
 ----------------
 
 - Nothing changed yet.
+
+
+0.2 (2015-05-19)
+----------------
+
+- Add support for channels.
+  (Issue #9, thanks MatthieuDartiailh)
+- Add support for error queue.
+  (Issue #26, thanks MatthieuDartiailh)
+- Add support for TCPIP SOCKET.
+  (Issue #29, thanks MatthieuDartiailh)
+- Removed resource string parsing in favour of to pyvisa.rname.
+- Changed find_resource and find_next in favour of list_resources.
+- Implemented new loader with bases and versioning enforcing.
+  (Issue #16)
+- Renamed is_resource to bundled in yaml files.
+- Added support for an empty response.
+  (Issue #15, thanks famish99)
+- Several small fixes and better VISA compliance.
+- Better error reporting and debug info.
 
 
 0.1 (2015-02-12)
 ----------------
 
-- Nothing changed yet.
+- First public release.
+- Basic ASRL INSTR functionality.
+- Basic USB INSTR functionality.
+- Basic TCPIP INSTR functionality.

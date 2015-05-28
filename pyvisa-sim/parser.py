@@ -12,11 +12,14 @@
 import os
 from io import open, StringIO
 from contextlib import closing
+from traceback import format_exc
 
 import pkg_resources
 import yaml
 
-from .devices import Devices, Device, NoResponse
+from .component import NoResponse
+from .devices import Devices, Device
+from .channels import Channels
 
 
 def _ver_to_tuple(ver):
@@ -24,7 +27,7 @@ def _ver_to_tuple(ver):
 
 
 #: Version of the specification
-SPEC_VERSION = '1.0'
+SPEC_VERSION = '1.1'
 
 SPEC_VERSION_TUPLE = _ver_to_tuple(SPEC_VERSION)
 
@@ -82,7 +85,7 @@ def _load(content_or_fp):
     try:
         data = yaml.load(content_or_fp, Loader=yaml.loader.BaseLoader)
     except Exception as e:
-        raise Exception('Malformed yaml file:\n%r' % e)
+        raise type(e)('Malformed yaml file:\n%r' % format_exc())
 
     try:
         ver = data['spec']
@@ -120,6 +123,150 @@ def parse_file(fullpath):
         return _load(fp)
 
 
+def update_component(name, comp, component_dict):
+    """Get a component from a component dict.
+
+    """
+    for dia in component_dict.get('dialogues', ()):
+        try:
+            comp.add_dialogue(*_get_pair(dia))
+        except Exception as e:
+            msg = 'In device %s, malformed dialogue %s\n%r'
+            raise Exception(msg % (name, dia, e))
+
+    for prop_name, prop_dict in component_dict.get('properties', {}).items():
+        try:
+            getter = (_get_pair(prop_dict['getter'])
+                      if 'getter' in prop_dict else None)
+            setter = (_get_triplet(prop_dict['setter'])
+                      if 'setter' in prop_dict else None)
+            comp.add_property(prop_name, prop_dict.get('default', ''),
+                              getter, setter, prop_dict.get('specs', {}))
+        except Exception as e:
+            msg = 'In device %s, malformed property %s\n%r'
+            raise type(e)(msg % (name, prop_name, format_exc()))
+
+
+def get_bases(definition_dict, loader):
+    """Collect dependencies.
+
+    """
+    bases = definition_dict.get('bases', ())
+    if bases:
+        bases = (loader.get_comp_dict(required_version=SPEC_VERSION_TUPLE[0],
+                                      **b)
+                 for b in bases)
+        return SimpleChainmap(definition_dict, *bases)
+    else:
+        return definition_dict
+
+
+def get_channel(device, ch_name, channel_dict, loader, resource_dict):
+    """Get a channels from a channels dictionary.
+
+    :param name: name of the device
+    :param device_dict: device dictionary
+    :rtype: Device
+    """
+    channel_dict = get_bases(channel_dict, loader)
+
+    r_ids = resource_dict.get('channel_ids', {}).get(ch_name, [])
+    ids = r_ids if r_ids else channel_dict.get('ids', {})
+
+    can_select = False if channel_dict.get('can_select') == 'False' else True
+    channels = Channels(device, ids, can_select)
+
+    update_component(ch_name, channels, channel_dict)
+
+    return channels
+
+
+def get_device(name, device_dict, loader, resource_dict):
+    """Get a device from a device dictionary.
+
+    :param name: name of the device
+    :param device_dict: device dictionary
+    :rtype: Device
+    """
+    device = Device(name, device_dict.get('delimiter', ';').encode('utf-8'))
+
+    device_dict = get_bases(device_dict, loader)
+
+    err = device_dict.get('error', {})
+    device.add_error_handler(err)
+
+    for itype, eom_dict in device_dict.get('eom', {}).items():
+        device.add_eom(itype, *_get_pair(eom_dict))
+
+    update_component(name, device, device_dict)
+
+    for ch_name, ch_dict in device_dict.get('channels', {}).items():
+        device.add_channels(ch_name, get_channel(device, ch_name, ch_dict,
+                                                 loader, resource_dict))
+
+    return device
+
+
+class Loader(object):
+
+    def __init__(self, filename, bundled):
+
+        # (absolute path / resource name / None, bundled) -> dict
+        # :type: dict[str | None, bool, dict]
+        self._cache = {}
+
+        self.data = self._load(filename, bundled, SPEC_VERSION_TUPLE[0])
+
+        self._filename = filename
+        self._bundled = bundled
+        self._basepath = os.path.dirname(filename)
+
+    def load(self, filename, bundled, parent, required_version):
+
+        if self._bundled and not bundled:
+            msg = 'Only other bundled files can be loaded from bundled files.'
+            raise ValueError(msg)
+
+        if parent is None:
+            parent = self._filename
+
+        base = os.path.dirname(parent)
+
+        filename = os.path.join(base, filename)
+
+        return self._load(filename, bundled, required_version)
+
+    def _load(self, filename, bundled, required_version):
+
+        if (filename, bundled) in self._cache:
+            return self._cache[(filename, bundled)]
+
+        if bundled:
+            data = parse_resource(filename)
+        else:
+            data = parse_file(filename)
+
+        ver = _ver_to_tuple(data['spec'])[0]
+        if ver != required_version:
+            raise ValueError('Invalid version in %s (bundled = %s). '
+                             'Expected %s, found %s,' % (filename, bundled,
+                                                         required_version, ver)
+                             )
+
+        self._cache[(filename, bundled)] = data
+
+        return data
+
+    def get_device_dict(self, device, filename, bundled, required_version):
+
+        if filename is None:
+            data = self.data
+        else:
+            data = self.load(filename, bundled, None, required_version)
+
+        return data['devices'][device]
+
+
 def get_devices(filename, bundled):
     """Get a Devices object from a file.
 
@@ -146,102 +293,6 @@ def get_devices(filename, bundled):
                                     required_version=SPEC_VERSION_TUPLE[0])
 
         devices.add_device(resource_name,
-                           get_device(device_name, dd, loader))
+                           get_device(device_name, dd, loader, resource_dict))
 
     return devices
-
-
-def get_device(name, device_dict, loader):
-    """Get a device from a device dictionary.
-
-    :param name: name of the device
-    :param device_dict: device dictionary
-    :rtype: Device
-    """
-    device = Device(name)
-    
-    err = device_dict.get('error', {})
-    device.add_error_handler(err)
-
-    bases = device_dict.get('bases', ())
-    if bases:
-        bases = (loader.get_device_dict(required_version=SPEC_VERSION_TUPLE[0], **b)
-                 for b in bases)
-        device_dict = SimpleChainmap(device_dict, *bases)
-
-    for itype, eom_dict in device_dict.get('eom', {}).items():
-        device.add_eom(itype, *_get_pair(eom_dict))
-
-    for dia in device_dict.get('dialogues', ()):
-        try:
-            device.add_dialogue(*_get_pair(dia))
-        except Exception as e:
-            raise Exception('In device %s, malformed dialogue %s\n%r' % (name, dia, e))
-
-    for prop_name, prop_dict in device_dict.get('properties', {}).items():
-        try:
-            getter = _get_pair(prop_dict['getter']) if 'getter' in prop_dict else None
-            setter = _get_triplet(prop_dict['setter']) if 'setter' in prop_dict else None
-            device.add_property(prop_name, prop_dict.get('default', ''),
-                                getter, setter, prop_dict.get('specs', {}))
-        except Exception as e:
-            raise Exception('In device %s, malformed property %s\n%r' % (name, prop_name, e))
-
-    return device
-
-
-class Loader(object):
-
-    def __init__(self, filename, bundled):
-
-        # (absolute path / resource name / None, bundled) -> dict
-        # :type: dict[str | None, bool, dict]
-        self._cache = {}
-
-        self.data = self._load(filename, bundled, SPEC_VERSION_TUPLE[0])
-
-        self._filename = filename
-        self._bundled = bundled
-        self._basepath = os.path.dirname(filename)
-
-    def load(self, filename, bundled, parent, required_version):
-
-        if self._bundled and not bundled:
-            raise ValueError('Only other bundled files can be loaded from bundled files.')
-
-        if parent is None:
-            parent = self._filename
-
-        base = os.path.dirname(parent)
-
-        filename = os.path.join(base, filename)
-
-        return self._load(filename, bundled, required_version)
-
-    def _load(self, filename, bundled, required_version):
-
-        if (filename, bundled) in self._cache:
-            return self._cache[(filename, bundled)]
-
-        if bundled:
-            data = parse_resource(filename)
-        else:
-            data = parse_file(filename)
-
-        ver = _ver_to_tuple(data['spec'])[0]
-        if ver != required_version:
-            raise ValueError('Invalid version in %s (bundled = %s). '
-                             'Expected %s, found %s,' % (filename, bundled, required_version, ver))
-
-        self._cache[(filename, bundled)] = data
-
-        return data
-
-    def get_device_dict(self, device, filename, bundled, required_version):
-
-        if filename is None:
-            data = self.data
-        else:
-            data = self.load(filename, bundled, None, required_version)
-
-        return data['devices'][device]
