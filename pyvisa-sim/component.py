@@ -138,14 +138,16 @@ class Component(object):
         """
         self._properties[name] = Property(name, default_value, specs)
 
-        query, response = getter_pair
-        self._getters[to_bytes(query)] = name, response
+        if getter_pair:
+            query, response = getter_pair
+            self._getters[to_bytes(query)] = name, response
 
-        query, response, error = setter_triplet
-        self._setters.append((name,
-                              stringparser.Parser(query),
-                              to_bytes(response),
-                              to_bytes(error)))
+        if setter_triplet:
+            query, response, error = setter_triplet
+            self._setters.append((name,
+                                  stringparser.Parser(query),
+                                  to_bytes(response),
+                                  to_bytes(error)))
 
     def match(self, query):
         """Try to find a match for a query in the instrument commands.
