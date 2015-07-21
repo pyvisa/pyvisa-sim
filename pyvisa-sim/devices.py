@@ -139,8 +139,13 @@ class Device(Component):
     def resource_name(self, value):
         p = rname.parse_resource_name(value)
         self._resource_name = str(p)
-        self._query_eom, self._response_eom =\
-            self._eoms[(p.interface_type_const, p.resource_class)]
+        try:
+            self._query_eom, self._response_eom =\
+                self._eoms[(p.interface_type_const, p.resource_class)]
+        except KeyError:
+            logger.warning('No eom provided for %s, %s.'
+                           'Using LF.'% (p.interface_type_const, p.resource_class))
+            self._query_eom, self._response_eom = b'\n', b'\n'
 
     def add_channels(self, ch_name, ch_obj):
         """Add a channel definition.
