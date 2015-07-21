@@ -30,7 +30,8 @@ class TestAll(BaseTestCase):
                           'ASRL4::INSTR',
                           'USB0::0x1111::0x2222::0x4444::0::INSTR',
                           'TCPIP0::localhost:4444::inst0::INSTR',
-                          'GPIB0::4::65535::INSTR'
+                          'GPIB0::4::65535::INSTR',
+                          'USB0::0x1111::0x2222::0x4445::0::RAW'
                          )))
 
     def test_devices(self):
@@ -38,6 +39,7 @@ class TestAll(BaseTestCase):
             'GPIB0::8::65535::INSTR',
             'TCPIP0::localhost:1111::inst0::INSTR',
             'ASRL1::INSTR',
+            'USB0::0x1111::0x2222::0x4445::0::RAW',
             'USB0::0x1111::0x2222::0x1234::0::INSTR',
             'TCPIP0::localhost::10001::SOCKET',
             )
@@ -88,7 +90,7 @@ class TestAll(BaseTestCase):
     def _test(self, inst, a, b):
         query = inst.query(a)
         self.assertEqual(query, b,
-                         msg=inst.resource_name + ', %r == %r' % (query, b))
+                         msg='%s, %r == %r' % (inst.resource_name, query, b))
 
     def _test_device(self, resource_name):
         inst = self.rm.open_resource(resource_name, read_termination='\n',
