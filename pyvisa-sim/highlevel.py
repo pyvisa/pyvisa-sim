@@ -154,11 +154,11 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         :param query: regular expression used to match devices.
         """
 
-        # TODO: Query not implemented
-
         # For each session type, ask for the list of connected resources and merge them into a single list.
 
         resources = self.devices.list_resources()
+
+        resources = rname.filter(resources, query)
 
         if resources:
             return resources
