@@ -5,7 +5,12 @@ PyVISA-sim Changelog
 0.3 (unreleased)
 ----------------
 
-- Nothing changed yet.
+- Fixed bug in get_device_dict.
+  (Issue #37)
+- Move resource name parsing to pyvisa.rname.
+- Implemented query in list_resources.
+- Add support for USB RAW.
+- Warn the user when no eom is specified for device type and use LF.
 
 
 0.2 (2015-05-19)
