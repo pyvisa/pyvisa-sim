@@ -53,7 +53,6 @@ class SerialInstrumentSession(sessions.Session):
 
             if not last:
                 time.sleep(.01)
-                now = time.time()
                 continue
 
             out += last
