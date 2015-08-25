@@ -290,7 +290,7 @@ def get_devices(filename, bundled):
         dd = loader.get_device_dict(device_name,
                                     resource_dict.get('filename', None),
                                     resource_dict.get('bundled', False),
-                                    required_version=SPEC_VERSION_TUPLE[0])
+                                    SPEC_VERSION_TUPLE[0])
 
         devices.add_device(resource_name,
                            get_device(device_name, dd, loader, resource_dict))

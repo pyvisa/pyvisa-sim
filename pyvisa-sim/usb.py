@@ -42,11 +42,11 @@ class USBInstrumentSession(sessions.Session):
         timeout, _ = self.get_attribute(constants.VI_ATTR_TMO_VALUE)
         timeout /= 1000
 
-        now = start = time.time()
+        start = time.time()
 
         out = b''
 
-        while now - start <= timeout:
+        while time.time() - start <= timeout:
             last = self.device.read()
 
             if not last:
