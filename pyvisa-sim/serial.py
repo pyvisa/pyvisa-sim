@@ -44,11 +44,11 @@ class SerialInstrumentSession(sessions.Session):
 
         last_bit, _ = self.get_attribute(constants.VI_ATTR_ASRL_DATA_BITS)
         mask = 1 << (last_bit - 1)
-        now = start = time.time()
+        start = time.time()
 
         out = b''
 
-        while now - start <= timeout:
+        while time.time() - start <= timeout:
             last = self.device.read()
 
             if not last:
