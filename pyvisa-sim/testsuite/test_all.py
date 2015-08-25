@@ -12,11 +12,11 @@ class TestAll(BaseTestCase):
         cls.rm = visa.ResourceManager('@sim')
 
     def test_list(self):
-        self.assertEqual(set(self.rm.list_resources()),
+        self.assertEqual(set(self.rm.list_resources('?*')),
                          set((
                           'ASRL1::INSTR',
                           'USB0::0x1111::0x2222::0x1234::0::INSTR',
-                          'TCPIP0::localhost:1111::inst0::INSTR',
+                          'TCPIP0::localhost::inst0::INSTR',
                           'TCPIP0::localhost::10001::SOCKET',
                           'GPIB0::8::65535::INSTR',
                           'ASRL2::INSTR',
@@ -37,7 +37,7 @@ class TestAll(BaseTestCase):
     def test_devices(self):
         run_list = (
             'GPIB0::8::65535::INSTR',
-            'TCPIP0::localhost:1111::inst0::INSTR',
+            'TCPIP0::localhost::inst0::INSTR',
             'ASRL1::INSTR',
             'USB0::0x1111::0x2222::0x4445::0::RAW',
             'USB0::0x1111::0x2222::0x1234::0::INSTR',
