@@ -9,7 +9,7 @@ it allows you to write your own in simple YAML_ files.
 Here we will go through the structure of such a file, using the `one provided
 with pyvisa-sim`_ as an example. The first line you will find is the specification version::
 
-    spec: "1.0"
+    spec: "1.1"
 
 This allow us to introduce changes to the specification without breaking user's code
 and definition files. Hopefully we will not need to do that, but we like to be prepared.
