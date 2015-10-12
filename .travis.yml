@@ -7,7 +7,8 @@ python:
   - "3.4"
 
 install:
-  - pip install coverage coveralls
+  - if [ $TRAVIS_PYTHON_VERSION == '3.2' ]; then pip install coverage==3.7.1; else pip install coverage; fi
+  - pip install coveralls
 
 script:
   - python -bb -m coverage run -p --source=pyvisa-sim --omit="*test*" setup.py test
