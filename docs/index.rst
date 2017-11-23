@@ -44,8 +44,8 @@ You can report a problem or ask for features in the `issue tracker`_.
 
 .. _PyVISA: http://pyvisa.readthedocs.org/
 .. _PyPI: https://pypi.python.org/pypi/PyVISA-sim
-.. _GitHub: https://github.com/hgrecco/pyvisa-sim
-.. _`issue tracker`: https://github.com/hgrecco/pyvisa-sim/issues
+.. _GitHub: https://github.com/pyvisa/pyvisa-sim
+.. _`issue tracker`: https://github.com/pyvisa/pyvisa-sim/issues
 
 
 User Guide

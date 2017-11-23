@@ -50,7 +50,7 @@ Using pip:
 
 or install the development version:
 
-    $ pip install -U https://github.com/hgrecco/pyvisa-sim/zipball/master
+    $ pip install -U https://github.com/pyvisa/pyvisa-sim/zipball/master
 
 PyVISA is automatically installed if needed.
 
