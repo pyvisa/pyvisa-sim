@@ -114,7 +114,7 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         # Loops through all session types, tries to parse the resource name and if ok, open it.
         cls = sessions.Session.get_session_class(parsed.interface_type_const, parsed.resource_class)
 
-        sess = cls(session, resource_name, parsed)
+        sess = cls(session, resource_name, parsed, open_timeout)
 
         try:
             sess.device = self.devices[sess.attrs[constants.VI_ATTR_RSRC_NAME]]
