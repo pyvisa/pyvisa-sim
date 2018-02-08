@@ -61,10 +61,11 @@ class GPIBInstrumentSession(sessions.Session):
 
     def write(self, data):
         send_end = self.get_attribute(constants.VI_ATTR_SEND_END_EN)
-
+        bytes_written = 0
         for i in range(len(data)):
             self.device.write(data[i:i+1])
-
+            bytes_written += 1
         if send_end:
             # EOM4882
             pass
+        return bytes_written, constants.StatusCode.success
