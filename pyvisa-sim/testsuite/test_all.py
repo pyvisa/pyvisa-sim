@@ -136,19 +136,28 @@ class TestAll(BaseTestCase):
             write_termination='\r\n' if resource_name.startswith('ASRL') else '\n'
             )
 
-        inst.write('FAKE_COMMAND')
+        n, status = inst.write('FAKE_COMMAND')
+        self.assertEqual(int(status), 0)
+        self.assertEqual(n, len('FAKE_COMMAND') + len(inst.write_termination))
         status_reg = inst.query('*ESR?')
+
         self.assertEqual(int(status_reg), 32, 'invalid test command')
 
-        inst.write(':VOLT:IMM:AMPL 2.00')
+        n, status = inst.write(':VOLT:IMM:AMPL 2.00')
+        self.assertEqual(n, len(':VOLT:IMM:AMPL 2.00') + len(inst.write_termination))
+        self.assertEqual(int(status), 0)
         status_reg = inst.query('*ESR?')
         self.assertEqual(int(status_reg), 0)
 
-        inst.write(':VOLT:IMM:AMPL 0.5')
+        n, status = inst.write(':VOLT:IMM:AMPL 0.5')
+        self.assertEqual(n, len(':VOLT:IMM:AMPL 0.5') + len(inst.write_termination))
+        self.assertEqual(int(status), 0)
         status_reg = inst.query('*ESR?')
         self.assertEqual(int(status_reg), 32, 'invalid range test - <min')
 
-        inst.write(':VOLT:IMM:AMPL 6.5')
+        n, status = inst.write(':VOLT:IMM:AMPL 6.5')
+        self.assertEqual(n, len(':VOLT:IMM:AMPL 6.5') + len(inst.write_termination))
+        self.assertEqual(int(status), 0)
         status_reg = inst.query('*ESR?')
         self.assertEqual(int(status_reg), 32, 'invalid range test - >max')
 

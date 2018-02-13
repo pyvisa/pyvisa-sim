@@ -82,6 +82,7 @@ class SerialInstrumentSession(sessions.Session):
             return out, constants.StatusCode.error_timeout
 
     def write(self, data):
+        bytes_written = 0
         send_end, _ = self.get_attribute(constants.VI_ATTR_SEND_END_EN)
         asrl_end, _ = self.get_attribute(constants.VI_ATTR_ASRL_END_OUT)
 
@@ -93,14 +94,17 @@ class SerialInstrumentSession(sessions.Session):
             mask = 1 << (last_bit - 1)
             for val in common.iter_bytes(data, mask, send_end):
                 self.device.write(val)
+                bytes_written += 1
         else:
 
             for i in range(len(data)):
                 self.device.write(data[i:i+1])
+                bytes_written += 1
 
             if asrl_end == constants.SerialTermination.termination_char:
                 if send_end:
                     self.device.write(end_char)
+                    bytes_written += 1
 
             elif asrl_end == constants.SerialTermination.termination_break:
                 if send_end:
@@ -109,3 +113,4 @@ class SerialInstrumentSession(sessions.Session):
 
             elif not asrl_end == constants.SerialTermination.none:
                 raise ValueError('Unknown value for VI_ATTR_ASRL_END_OUT')
+        return bytes_written, constants.StatusCode.success
