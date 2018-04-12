@@ -4,7 +4,7 @@ from __future__ import division, unicode_literals, print_function, absolute_impo
 
 import os
 
-from pyvisa.compat import unittest
+import unittest
 
 
 def testsuite():
@@ -29,4 +29,3 @@ def run():
     """
     test_runner = unittest.TextTestRunner()
     return test_runner.run(testsuite())
-
