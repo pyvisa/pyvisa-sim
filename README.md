@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/croesnick/pyvisa-sim.svg?branch=feature%2Fmodernize)](https://travis-ci.org/croesnick/pyvisa-sim)
+
 # PyVISA-sim
 
 PyVISA-sim is a PyVISA backend that simulates a large part of the

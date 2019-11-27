@@ -5,6 +5,10 @@ name = "pypi"
 
 [dev-packages]
 modernize = "*"
+coverage = "*"
+coveralls = "*"
+"unittest2pytest" = "*"
+pytest = "*"
 
 [packages]
 stringparser = "*"

@@ -1,185 +1,158 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-from pyvisa.testsuite import BaseTestCase
+
+import pytest
 from pyvisa.errors import VisaIOError
-import pyvisa
 
 
-class TestAll(BaseTestCase):
+def assert_instrument_response(device, query, data):
+    response = device.query(query)
+    assert response == data, '%s, %r == %r' % (device.resource_name, query, data)
 
-    @classmethod
-    def setUpClass(cls):
-        cls.rm = pyvisa.ResourceManager('@sim')
 
-    def test_list(self):
-        self.assertEqual(set(self.rm.list_resources('?*')),
-                         set((
-                          'ASRL1::INSTR',
-                          'USB0::0x1111::0x2222::0x1234::0::INSTR',
-                          'TCPIP0::localhost::inst0::INSTR',
-                          'TCPIP0::localhost::10001::SOCKET',
-                          'GPIB0::8::65535::INSTR',
-                          'ASRL2::INSTR',
-                          'USB0::0x1111::0x2222::0x2468::0::INSTR',
-                          'TCPIP0::localhost:2222::inst0::INSTR',
-                          'GPIB0::9::65535::INSTR',
-                          'ASRL3::INSTR',
-                          'USB0::0x1111::0x2222::0x3692::0::INSTR',
-                          'TCPIP0::localhost:3333::inst0::INSTR',
-                          'GPIB0::10::65535::INSTR',
-                          'ASRL4::INSTR',
-                          'USB0::0x1111::0x2222::0x4444::0::INSTR',
-                          'TCPIP0::localhost:4444::inst0::INSTR',
-                          'GPIB0::4::65535::INSTR',
-                          'USB0::0x1111::0x2222::0x4445::0::RAW'
-                         )))
+def test_list(resource_manager):
+    assert set(resource_manager.list_resources('?*')) == \
+           {
+               'ASRL1::INSTR',
+               'ASRL2::INSTR',
+               'ASRL3::INSTR',
+               'ASRL4::INSTR',
+               'TCPIP0::localhost::inst0::INSTR',
+               'TCPIP0::localhost::10001::SOCKET',
+               'TCPIP0::localhost:2222::inst0::INSTR',
+               'TCPIP0::localhost:3333::inst0::INSTR',
+               'TCPIP0::localhost:4444::inst0::INSTR',
+               'USB0::0x1111::0x2222::0x1234::0::INSTR',
+               'USB0::0x1111::0x2222::0x2468::0::INSTR',
+               'USB0::0x1111::0x2222::0x3692::0::INSTR',
+               'USB0::0x1111::0x2222::0x4444::0::INSTR',
+               'USB0::0x1111::0x2222::0x4445::0::RAW',
+               'GPIB0::4::0::INSTR',
+               'GPIB0::8::0::INSTR',
+               'GPIB0::9::0::INSTR',
+               'GPIB0::10::0::INSTR',
+           }
 
-    def test_devices(self):
-        run_list = (
-            'GPIB0::8::65535::INSTR',
-            'TCPIP0::localhost::inst0::INSTR',
-            'ASRL1::INSTR',
-            'USB0::0x1111::0x2222::0x4445::0::RAW',
-            'USB0::0x1111::0x2222::0x1234::0::INSTR',
-            'TCPIP0::localhost::10001::SOCKET',
-            )
-        for rn in run_list:
-            self._test_device(rn)
 
-    def test_devices_2(self):
-        run_list = (
-            'ASRL2::INSTR',
-            'USB0::0x1111::0x2222::0x2468::0::INSTR',
-            'TCPIP0::localhost:2222::inst0::INSTR',
-            'GPIB0::9::65535::INSTR',
-            )
-        for rn in run_list:
-            self._test_device_2(rn)
+@pytest.mark.parametrize('resource', [
+    'ASRL1::INSTR',
+    'GPIB0::8::0::INSTR',
+    'TCPIP0::localhost::inst0::INSTR',
+    'TCPIP0::localhost::10001::SOCKET',
+    'USB0::0x1111::0x2222::0x1234::0::INSTR',
+    'USB0::0x1111::0x2222::0x4445::0::RAW',
+])
+def test_instruments(resource, resource_manager):
+    inst = resource_manager.open_resource(resource, read_termination='\n',
+                                          write_termination='\r\n' if resource.startswith('ASRL') else '\n')
 
-    def test_devices_3(self):
-        run_list = (
-            'ASRL3::INSTR',
-            'USB0::0x1111::0x2222::0x3692::0::INSTR',
-            'TCPIP0::localhost:3333::inst0::INSTR',
-            'GPIB0::10::65535::INSTR',
-            )
-        for rn in run_list:
-            self._test_device_3(rn)
+    assert_instrument_response(inst, '?IDN', 'LSG Serial #1234')
 
-    def test_devices_timeouts(self):
-        # Test timeout.
-        run_list = (
-                'ASRL3::INSTR',
-                'USB0::0x1111::0x2222::0x3692::0::INSTR',
-                'TCPIP0::localhost:3333::inst0::INSTR',
-                'GPIB0::10::65535::INSTR',
-                )
-        for rn in run_list:
-            self._test_devices_timeouts(rn)
+    assert_instrument_response(inst, '?FREQ', '100.00')
+    assert_instrument_response(inst, '!FREQ 10.3', 'OK')
+    assert_instrument_response(inst, '?FREQ', '10.30')
 
-    def test_devices_4(self):
-        run_list = (
-            'ASRL4::INSTR',
-            'USB0::0x1111::0x2222::0x4444::0::INSTR',
-            'TCPIP0::localhost:4444::inst0::INSTR',
-            'GPIB0::4::INSTR',
-            )
-        for rn in run_list:
-            self._test_devices_4(rn)
+    assert_instrument_response(inst, '?AMP', '1.00')
+    assert_instrument_response(inst, '!AMP 3.8', 'OK')
+    assert_instrument_response(inst, '?AMP', '3.80')
 
-    def _test(self, inst, a, b):
-        query = inst.query(a)
-        self.assertEqual(query, b,
-                         msg='%s, %r == %r' % (inst.resource_name, query, b))
+    assert_instrument_response(inst, '?OFF', '0.00')
+    assert_instrument_response(inst, '!OFF 1.2', 'OK')
+    assert_instrument_response(inst, '?OFF', '1.20')
 
-    def _test_device(self, resource_name):
-        inst = self.rm.open_resource(resource_name, read_termination='\n',
-                                     write_termination='\r\n' if resource_name.startswith('ASRL') else '\n')
-        self._test(inst, '?IDN', 'LSG Serial #1234')
+    assert_instrument_response(inst, '?OUT', '0')
+    assert_instrument_response(inst, '!OUT 1', 'OK')
+    assert_instrument_response(inst, '?OUT', '1')
 
-        self._test(inst, '?FREQ', '100.00')
-        self._test(inst, '!FREQ 10.3', 'OK')
-        self._test(inst, '?FREQ', '10.30')
+    assert_instrument_response(inst, '?WVF', '0')
+    assert_instrument_response(inst, '!WVF 1', 'OK')
+    assert_instrument_response(inst, '?WVF', '1')
 
-        self._test(inst, '?AMP', '1.00')
-        self._test(inst, '!AMP 3.8', 'OK')
-        self._test(inst, '?AMP', '3.80')
+    assert_instrument_response(inst, '!CAL', 'OK')
 
-        self._test(inst, '?OFF', '0.00')
-        self._test(inst, '!OFF 1.2', 'OK')
-        self._test(inst, '?OFF', '1.20')
+    # Errors
 
-        self._test(inst, '?OUT', '0')
-        self._test(inst, '!OUT 1', 'OK')
-        self._test(inst, '?OUT', '1')
+    assert_instrument_response(inst, '!WVF 23', 'ERROR')
+    assert_instrument_response(inst, '!AMP -1.0', 'ERROR')
+    assert_instrument_response(inst, '!AMP 11.0', 'ERROR')
+    assert_instrument_response(inst, '!FREQ 0.0', 'FREQ_ERROR')
+    assert_instrument_response(inst, 'BOGUS_COMMAND', 'ERROR')
 
-        self._test(inst, '?WVF', '0')
-        self._test(inst, '!WVF 1', 'OK')
-        self._test(inst, '?WVF', '1')
+    inst.close()
 
-        self._test(inst, '!CAL', 'OK')
 
-        # Errors
+@pytest.mark.parametrize('resource', [
+    'ASRL3::INSTR',
+    'GPIB0::10::INSTR',
+    'TCPIP0::localhost:3333::inst0::INSTR',
+    'USB0::0x1111::0x2222::0x3692::0::INSTR',
+])
+def test_instruments_on_invalid_command(resource, resource_manager):
+    inst = resource_manager.open_resource(resource, read_termination='\n',
+                                          write_termination='\r\n' if resource.startswith('ASRL') else '\n')
 
-        self._test(inst, '!WVF 23', 'ERROR')
-        self._test(inst, '!AMP -1.0', 'ERROR')
-        self._test(inst, '!AMP 11.0', 'ERROR')
-        self._test(inst, '!FREQ 0.0', 'FREQ_ERROR')
-        self._test(inst, 'BOGUS_COMMAND', 'ERROR')
+    response = inst.query('FAKE_COMMAND')
+    assert response == 'INVALID_COMMAND', 'invalid command test - response'
 
-        inst.close()
+    status_reg = inst.query('*ESR?')
+    assert int(status_reg) == 32, 'invalid command test - status'
 
-    def _test_device_2(self, resource_name):
-        inst = self.rm.open_resource(
-            resource_name,
-            read_termination='\n',
-            write_termination='\r\n' if resource_name.startswith('ASRL') else '\n'
-            )
 
-        inst.write('FAKE_COMMAND')
-        status_reg = inst.query('*ESR?')
-        self.assertEqual(int(status_reg), 32, 'invalid test command')
+@pytest.mark.parametrize('resource', [
+    'ASRL2::INSTR',
+    'GPIB0::9::INSTR',
+    'TCPIP0::localhost:2222::inst0::INSTR',
+    'USB0::0x1111::0x2222::0x2468::0::INSTR',
+])
+def test_instrument_on_invalid_values(resource, resource_manager):
+    inst = resource_manager.open_resource(resource, read_termination='\n',
+                                          write_termination='\r\n' if resource.startswith('ASRL') else '\n')
 
-        inst.write(':VOLT:IMM:AMPL 2.00')
-        status_reg = inst.query('*ESR?')
-        self.assertEqual(int(status_reg), 0)
+    inst.write('FAKE_COMMAND')
+    status_reg = inst.query('*ESR?')
+    assert int(status_reg) == 32, 'invalid test command'
 
-        inst.write(':VOLT:IMM:AMPL 0.5')
-        status_reg = inst.query('*ESR?')
-        self.assertEqual(int(status_reg), 32, 'invalid range test - <min')
+    inst.write(':VOLT:IMM:AMPL 2.00')
+    status_reg = inst.query('*ESR?')
+    assert int(status_reg) == 0
 
-        inst.write(':VOLT:IMM:AMPL 6.5')
-        status_reg = inst.query('*ESR?')
-        self.assertEqual(int(status_reg), 32, 'invalid range test - >max')
+    inst.write(':VOLT:IMM:AMPL 0.5')
+    status_reg = inst.query('*ESR?')
+    assert int(status_reg) == 32, 'invalid range test - <min'
 
-    def _test_device_3(self, resource_name):
-        inst = self.rm.open_resource(
-            resource_name,
-            read_termination='\n',
-            write_termination='\r\n' if resource_name.startswith('ASRL') else '\n'
-            )
+    inst.write(':VOLT:IMM:AMPL 6.5')
+    status_reg = inst.query('*ESR?')
+    assert int(status_reg) == 32, 'invalid range test - >max'
 
-        response = inst.query('FAKE_COMMAND')
-        self.assertEqual(response, 'INVALID_COMMAND',
-                         'invalid command test - response')
 
-        status_reg = inst.query('*ESR?')
-        self.assertEqual(int(status_reg), 32, 'invalid command test - status')
+@pytest.mark.parametrize('resource', [
+    'ASRL3::INSTR',
+    'GPIB0::10::INSTR',
+    'TCPIP0::localhost:3333::inst0::INSTR',
+    'USB0::0x1111::0x2222::0x3692::0::INSTR',
+])
+def test_instruments_with_timeouts(resource, resource_manager):
+    inst = resource_manager.open_resource(resource, timeout=0.1)
 
-    def _test_devices_timeouts(self, resource_name):
-        inst = self.rm.open_resource(resource_name, timeout=0.1)
-        self.assertRaises(VisaIOError, inst.read)
+    with pytest.raises(VisaIOError):
+        inst.read()
 
-    def _test_devices_4(self, resource_name):
-        inst = self.rm.open_resource(
-            resource_name,
-            read_termination='\n',
-            write_termination='\r\n' if resource_name.startswith('ASRL') else '\n'
-            )
 
-        self._test(inst, ":SYST:ERR?", '0, No Error')
-        inst.write("FAKE COMMAND")
-        self._test(inst, ":SYST:ERR?", '1, Command error')
-        inst.write(":VOLT:IMM:AMPL 0")
-        self._test(inst, ":SYST:ERR?", '1, Command error')
+@pytest.mark.parametrize('resource', [
+    'ASRL4::INSTR',
+    'GPIB0::4::INSTR',
+    'TCPIP0::localhost:4444::inst0::INSTR',
+    'USB0::0x1111::0x2222::0x4444::0::INSTR',
+])
+def test_instrument_for_error_state(resource, resource_manager):
+    inst = resource_manager.open_resource(resource, read_termination='\n',
+                                          write_termination='\r\n' if resource.startswith('ASRL') else '\n')
+
+    assert_instrument_response(inst, ":SYST:ERR?", '0, No Error')
+
+    inst.write("FAKE COMMAND")
+    assert_instrument_response(inst, ":SYST:ERR?", '1, Command error')
+
+    inst.write(":VOLT:IMM:AMPL 0")
+    assert_instrument_response(inst, ":SYST:ERR?", '1, Command error')
