@@ -1,13 +1,9 @@
 language: python
 
 branches:
-  only:
-    # This is where pull requests from "bors r+" are built.
-    - staging
-    # This is where pull requests from "bors try" are built.
-    - trying
-    # Build master too
-    - master
+  except:
+  - legacy
+  - experimental
 
 python:
   - "2.7"
