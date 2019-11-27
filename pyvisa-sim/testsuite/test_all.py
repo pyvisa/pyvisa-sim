@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 from pyvisa.testsuite import BaseTestCase
 from pyvisa.errors import VisaIOError
-import visa
+import pyvisa
 
 
 class TestAll(BaseTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.rm = visa.ResourceManager('@sim')
+        cls.rm = pyvisa.ResourceManager('@sim')
 
     def test_list(self):
         self.assertEqual(set(self.rm.list_resources('?*')),

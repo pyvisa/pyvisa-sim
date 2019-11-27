@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 import os
 
 from pyvisa.testsuite import BaseTestCase
-import visa
+import pyvisa
 
 PACKAGE = os.path.dirname(__file__)
 
@@ -13,7 +14,7 @@ class TestChannels(BaseTestCase):
     @classmethod
     def setUpClass(cls):
         path = os.path.join(PACKAGE, 'channels.yaml')
-        cls.rm = visa.ResourceManager(path+'@sim')
+        cls.rm = pyvisa.ResourceManager(path+'@sim')
 
     def test_device_with_channel_preselection(self):
         run_list = (

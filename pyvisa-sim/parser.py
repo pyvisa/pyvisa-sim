@@ -9,6 +9,7 @@
     :license: MIT, see LICENSE for more details.
 """
 
+from __future__ import absolute_import
 import os
 from io import open, StringIO
 from contextlib import closing
@@ -20,6 +21,7 @@ import yaml
 from .component import NoResponse
 from .devices import Devices, Device
 from .channels import Channels
+from six.moves import map
 
 
 def _ver_to_tuple(ver):
@@ -164,8 +166,11 @@ def get_bases(definition_dict, loader):
 def get_channel(device, ch_name, channel_dict, loader, resource_dict):
     """Get a channels from a channels dictionary.
 
-    :param name: name of the device
-    :param device_dict: device dictionary
+    :param device:
+    :param ch_name:
+    :param channel_dict:
+    :param loader:
+    :param resource_dict:
     :rtype: Device
     """
     channel_dict = get_bases(channel_dict, loader)
@@ -184,6 +189,8 @@ def get_channel(device, ch_name, channel_dict, loader, resource_dict):
 def get_device(name, device_dict, loader, resource_dict):
     """Get a device from a device dictionary.
 
+    :param loader:
+    :param resource_dict:
     :param name: name of the device
     :param device_dict: device dictionary
     :rtype: Device
@@ -270,8 +277,8 @@ class Loader(object):
 def get_devices(filename, bundled):
     """Get a Devices object from a file.
 
+    :param bundled:
     :param filename: full path of the file to parse or name of the resource.
-    :param is_resource: boolean indicating if it is a resource.
     :rtype: Devices
     """
 

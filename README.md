@@ -1,0 +1,55 @@
+# PyVISA-sim
+
+PyVISA-sim is a PyVISA backend that simulates a large part of the
+"Virtual Instrument Software Architecture"
+([VISA](http://www.ivifoundation.org/Downloads/Specifications.htm)).
+
+## Description
+
+PyVISA started as a wrapper for the NI-VISA library and therefore you
+need to install the National Instruments VISA library in your system.
+This works most of the time, for most people. But sometimes you need to
+test PyVISA without the physical devices or even without NI-VISA.
+
+Starting from version 1.6, PyVISA allows to use different backends.
+These backends can be dynamically loaded. PyVISA-sim is one of such
+backends. It implements most of the methods for Message Based
+communication (Serial/USB/GPIB/Ethernet) in a simulated environment. The
+behaviour of simulated devices can be controlled by a simple plain text
+configuration file.
+
+## VISA and Python
+
+Python has a couple of features that make it very interesting for
+measurement controlling:
+
+  - Python is an easy-to-learn scripting language with short development
+    cycles.
+  - It represents a high abstraction level, which perfectly blends with
+    the abstraction level of measurement programs.
+  - It has a very rich set of native libraries, including numerical and
+    plotting modules for data analysis and visualisation.
+  - A large set of books (in many languages) and on-line publications is
+    available.
+
+## Requirements
+
+  - Python (tested with 2.6 and 2.7, 3.2+)
+  - PyVISA 1.6+
+
+## Installation
+
+Using pip:
+
+> $ pip install -U pyvisa-sim
+
+or install the development version:
+
+> $ pip install -U <https://github.com/pyvisa/pyvisa-sim/zipball/master>
+
+PyVISA is automatically installed if needed.
+
+## Documentation
+
+The documentation can be read online at
+<https://pyvisa-sim.readthedocs.org>

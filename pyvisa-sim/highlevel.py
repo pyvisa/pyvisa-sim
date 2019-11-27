@@ -151,6 +151,7 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
     def list_resources(self, session, query='?*::INSTR'):
         """Returns a tuple of all connected devices matching query.
 
+        :param session:
         :param query: regular expression used to match devices.
         """
 
