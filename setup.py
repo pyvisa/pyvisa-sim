@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os.path
 import sys
-from pathlib import Path
 
 try:
     from setuptools import setup
@@ -10,16 +10,16 @@ except ImportError:
     sys.exit(1)
 
 
-def read(filename):
-    path = Path(__file__).parent.joinpath(filename)
-    with path.open('r', encoding='utf-8') as fh:
+def read_content(filename):
+    path = os.path.join(os.path.dirname(os.path.realpath(__file__)), filename)
+    with open(path, 'r') as fh:
         content = fh.read()
     return content
 
 
-long_description = '\n\n'.join([read('README.md'), read('AUTHORS.md'), read('CHANGES.md')])
-
-requirements = ['stringparser', 'pyvisa>=1.8', 'pyyaml']
+long_description = '\n\n'.join([read_content('README.rst'),
+                                read_content('AUTHORS.rst'),
+                                read_content('CHANGES.rst')])
 
 setup(name='PyVISA-sim',
       description='Simulated backend for PyVISA implementing TCPIP, GPIB, RS232, and USB resources',
@@ -31,10 +31,9 @@ setup(name='PyVISA-sim',
       maintainer='Hernan E. Grecco',
       maintainer_email='hernan.grecco@gmail.com',
       url='https://github.com/pyvisa/pyvisa-sim',
-      test_suite='pyvisa-sim.testsuite.testsuite',
       keywords='VISA GPIB USB serial RS232 TCPIP measurement acquisition simulator mock',
       license='MIT License',
-      install_requires=requirements,
+      install_requires=['enum34', 'pyvisa', 'pyyaml', 'stringparser'],
       classifiers=[
           'Development Status :: 4 - Beta',
           'Intended Audience :: Developers',

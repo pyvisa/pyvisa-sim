@@ -1,4 +1,4 @@
-include README.md AUTHORS.md CHANGES.md LICENSE
+include README.rst AUTHORS.rst CHANGES.rst LICENSE.txt
 recursive-include pyvisa-sim *
 recursive-include docs *
 prune docs/_build

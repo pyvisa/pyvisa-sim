@@ -1,27 +1,38 @@
+---
+dist: xenial
+
 language: python
 
 branches:
   except:
-  - legacy
-  - experimental
+    - legacy
+    - experimental
 
-python:
-  - "2.7"
-  - "3.2"
-  - "3.3"
-  - "3.4"
-  - "3.5"
-  - "3.6"
+matrix:
+  include:
+    - python: 2.7
+      env: TOXENV=py27
+    - python: 3.2
+      env: TOXENV=py32
+    - python: 3.3
+      env: TOXENV=py33
+    - python: 3.4
+      env: TOXENV=py34
+    - python: 3.5
+      env: TOXENV=py35
+    - python: 3.6
+      env: TOXENV=py36
+    - python: 3.7
+      env: TOXENV=py37
+    - python: 3.8
+      env: TOXENV=py38
 
 install:
-  - if [ $TRAVIS_PYTHON_VERSION == '3.2' ]; then pip install coverage==3.7.1; else pip install coverage; fi
-  - pip install coveralls
-  - pip install pytest
+  - |
+    set -eu
+    pip install tox
 
 script:
-  - pytest
-  - coverage combine
-  - coverage report -m
-
-after_script:
-  - coveralls --verbose
+  - |
+    set -eu
+    tox --skip-missing-interpreters=false

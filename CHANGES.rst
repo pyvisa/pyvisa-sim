@@ -1,0 +1,47 @@
+PyVISA-sim Changelog
+====================
+
+.. _04-unreleased:
+
+0.4 (unreleased)
+----------------
+
+-  Nothing changed yet.
+
+.. _03-2015-08-25:
+
+0.3 (2015-08-25)
+----------------
+
+-  Fixed bug in get_device_dict. (Issue #37)
+-  Move resource name parsing to pyvisa.rname.
+-  Implemented query in list_resources.
+-  Add support for USB RAW.
+-  Warn the user when no eom is specified for device type and use LF.
+
+.. _02-2015-05-19:
+
+0.2 (2015-05-19)
+----------------
+
+-  Add support for channels. (Issue #9, thanks MatthieuDartiailh)
+-  Add support for error queue. (Issue #26, thanks MatthieuDartiailh)
+-  Add support for TCPIP SOCKET. (Issue #29, thanks MatthieuDartiailh)
+-  Removed resource string parsing in favour of to pyvisa.rname.
+-  Changed find_resource and find_next in favour of list_resources.
+-  Implemented new loader with bases and versioning enforcing. (Issue
+   #16)
+-  Renamed is_resource to bundled in yaml files.
+-  Added support for an empty response. (Issue #15, thanks famish99)
+-  Several small fixes and better VISA compliance.
+-  Better error reporting and debug info.
+
+.. _01-2015-02-12:
+
+0.1 (2015-02-12)
+----------------
+
+-  First public release.
+-  Basic ASRL INSTR functionality.
+-  Basic USB INSTR functionality.
+-  Basic TCPIP INSTR functionality.

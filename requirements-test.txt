@@ -1,0 +1,7 @@
+-e .
+
+importlib-metadata ; python_version < '3.8'
+importlib_resources ; python_version < '3.7'
+more-itertools ; python_version <= '2.7'
+pytest
+pytest-cov
