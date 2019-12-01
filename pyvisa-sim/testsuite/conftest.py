@@ -3,12 +3,6 @@ import os
 import pytest
 import pyvisa
 
-try:
-    import importlib.resources as pkg_resources
-except ImportError:
-    # Try back-ported to PY<37 `importlib_resources`
-    import importlib_resources as pkg_resources
-
 
 @pytest.fixture(scope='session')
 def resource_manager():

@@ -39,13 +39,13 @@ measurement controlling:
 Requirements
 ------------
 
--  Python (tested with 2.6 and 2.7, 3.2+)
+-  Python (tested with 2.7, and 3.2 to 3.8)
 -  PyVISA 1.6+
 
 Installation
 ------------
 
-Using pip:
+Using ``pip``:
 
    $ pip install -U pyvisa-sim
 
@@ -55,6 +55,21 @@ or install the development version:
    `https://github.com/pyvisa/pyvisa-sim/zipball/master`_
 
 PyVISA is automatically installed if needed.
+
+
+Testing
+-------
+
+Ensure you have ``tox`` installed.
+Then you can simply invoke
+
+   $ tox
+
+to run tests for all supported Python versions, or select one with
+
+   $ tox -e pyXY
+
+with ``X`` being the major version (2 or 3) and ``Y`` the minor version.
 
 Documentation
 -------------
