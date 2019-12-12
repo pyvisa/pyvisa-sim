@@ -39,7 +39,7 @@ measurement controlling:
 Requirements
 ------------
 
--  Python (tested with 2.7, and 3.2 to 3.8)
+-  Python (tested with 2.7, and 3.4 to 3.8)
 -  PyVISA 1.6+
 
 Installation
@@ -81,5 +81,5 @@ The documentation can be read online at
 .. _`https://github.com/pyvisa/pyvisa-sim/zipball/master`: https://github.com/pyvisa/pyvisa-sim/zipball/master
 .. _`https://pyvisa-sim.readthedocs.org`: https://pyvisa-sim.readthedocs.org
 
-.. |Build Status| image:: https://travis-ci.org/croesnick/pyvisa-sim.svg?branch=feature%2Fmodernize
-   :target: https://travis-ci.org/croesnick/pyvisa-sim
+.. |Build Status| image:: https://travis-ci.org/pyvisa/pyvisa-sim.svg?branch=master
+   :target: https://travis-ci.org/pyvisa/pyvisa-sim
