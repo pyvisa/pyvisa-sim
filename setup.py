@@ -22,7 +22,7 @@ long_description = '\n\n'.join([read_content('README.rst'),
                                 read_content('CHANGES.rst')])
 
 install_requires = [
-    'enum34',
+    'enum34 ; python_version < "3"',
     'pyvisa',
     'PyYAML',
     'stringparser',
@@ -65,11 +65,11 @@ setup(
         'Topic :: Scientific/Engineering :: Interface Engine/Protocol Translator',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.2',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
     packages=['pyvisa-sim',
               'pyvisa-sim.testsuite'],
