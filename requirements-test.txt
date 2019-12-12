@@ -1,6 +1,0 @@
--e .
-
-importlib-metadata ; python_version < '3.8'
-more-itertools==5.0.0 ; python_version < '3.4'
-pytest
-pytest-cov
