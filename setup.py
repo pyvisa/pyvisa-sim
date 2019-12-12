@@ -24,14 +24,14 @@ long_description = '\n\n'.join([read_content('README.rst'),
 install_requires = [
     'enum34',
     'pyvisa',
-    'PyYAML==3.13',
+    'PyYAML',
     'stringparser',
 ]
 
 tests_require = [
     'coverage',
     'importlib-metadata ; python_version < "3.8"',
-    'more-itertools==5.0.0 ; python_version < "3.4"',
+    'more-itertools',
     'pytest',
     'pytest-cov',
 ]
