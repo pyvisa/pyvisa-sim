@@ -1,4 +1,4 @@
-include README.rst AUTHORS.rst CHANGES.rst LICENSE.txt
+include README.rst AUTHORS.rst CHANGES.rst LICENSE.txt pyproject.toml
 recursive-include pyvisa-sim *
 recursive-include docs *
 prune docs/_build
