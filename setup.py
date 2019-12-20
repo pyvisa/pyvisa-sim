@@ -30,7 +30,6 @@ install_requires = [
 
 tests_require = [
     'coverage',
-    'importlib-metadata ; python_version < "3.8"',
     'more-itertools',
     'pytest',
     'pytest-cov',
