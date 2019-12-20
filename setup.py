@@ -41,7 +41,7 @@ setup(
     description='Simulated backend for PyVISA implementing TCPIP, GPIB, RS232, and USB resources',
     version='0.4.dev0',
     long_description=long_description,
-    long_description_content_type='text/markdown',
+    long_description_content_type='text/x-rst',
     author='Hernan E. Grecco',
     author_email='hernan.grecco@gmail.com',
     maintainer='Hernan E. Grecco',
