@@ -4,9 +4,13 @@ dist: xenial
 language: python
 
 branches:
-  except:
-    - legacy
-    - experimental
+  only:
+    # This is where pull requests from "bors r+" are built.
+    - staging
+    # This is where pull requests from "bors try" are built.
+    - trying
+    # Build master too
+    - master
 
 matrix:
   include:
