@@ -16,6 +16,7 @@ import time
 from pyvisa import constants
 
 from . import sessions
+from six.moves import range
 
 
 class BaseTCPIPSession(sessions.Session):

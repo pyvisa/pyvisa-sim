@@ -10,6 +10,7 @@
     :license: MIT, see LICENSE for more details.
 """
 
+from __future__ import absolute_import
 import sys
 
 import logging
