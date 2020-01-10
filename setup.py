@@ -24,7 +24,8 @@ long_description = '\n\n'.join([read_content('README.rst'),
 install_requires = [
     'enum34 ; python_version < "3"',
     'pyvisa>=1.6',
-    'PyYAML',
+    'PyYAML<5.3 ; python_version <  "3.5"',
+    'PyYAML     ; python_version >= "3.5"',
     'stringparser',
 ]
 
