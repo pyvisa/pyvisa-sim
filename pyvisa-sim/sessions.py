@@ -68,10 +68,11 @@ class Session(object):
             return python_class
         return _internal
 
-    def __init__(self, resource_manager_session, resource_name, parsed=None):
+    def __init__(self, resource_manager_session, resource_name, parsed=None, open_timeout=None):
         if parsed is None:
             parsed = rname.parse_resource_name(resource_name)
         self.parsed = parsed
+        self.open_timeout = open_timeout
         self.attrs = {constants.VI_ATTR_RM_SESSION: resource_manager_session,
                       constants.VI_ATTR_RSRC_NAME: str(parsed),
                       constants.VI_ATTR_RSRC_CLASS: parsed.resource_class,

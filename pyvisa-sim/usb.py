@@ -27,8 +27,8 @@ from . import sessions
 @sessions.Session.register(constants.InterfaceType.usb, 'INSTR')
 class USBInstrumentSession(sessions.Session):
 
-    def __init__(self, resource_manager_session, resource_name, parsed):
-        super(USBInstrumentSession, self).__init__(resource_manager_session, resource_name, parsed)
+    def __init__(self, resource_manager_session, resource_name, parsed, open_timeout):
+        super(USBInstrumentSession, self).__init__(resource_manager_session, resource_name, parsed, open_timeout)
 
     def after_parsing(self):
         self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed.board)
@@ -79,8 +79,8 @@ class USBInstrumentSession(sessions.Session):
 @sessions.Session.register(constants.InterfaceType.usb, 'RAW')
 class USBRawSession(sessions.Session):
 
-    def __init__(self, resource_manager_session, resource_name, parsed):
-        super(USBRawSession, self).__init__(resource_manager_session, resource_name, parsed)
+    def __init__(self, resource_manager_session, resource_name, parsed, open_timeout):
+        super(USBRawSession, self).__init__(resource_manager_session, resource_name, parsed, open_timeout)
 
     def after_parsing(self):
         self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed.board)
