@@ -37,6 +37,17 @@ def test_list(resource_manager):
 
 @pytest.mark.parametrize('resource', [
     'ASRL1::INSTR',
+])
+def test_clear(resource, resource_manager):
+    inst = resource_manager.open_resource(resource, read_termination='\n',
+                                          write_termination='\r\n' if resource.startswith('ASRL') else '\n')
+
+    inst.clear()
+    inst.close()
+
+
+@pytest.mark.parametrize('resource', [
+    'ASRL1::INSTR',
     'GPIB0::8::0::INSTR',
     'TCPIP0::localhost::inst0::INSTR',
     'TCPIP0::localhost::10001::SOCKET',
