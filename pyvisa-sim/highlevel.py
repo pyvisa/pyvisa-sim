@@ -255,3 +255,7 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
     def discard_events(self, session, event_type, mechanism):
         # TODO: implement this for GPIB finalization
         pass
+
+    def clear(self, session):
+        # Override to prevent the base class from raising a NotImplementedError
+        pass
