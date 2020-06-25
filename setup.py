@@ -30,9 +30,9 @@ __doc__ = long_description
 
 requirements = ['stringparser', 'pyvisa>=1.8', 'pyyaml']
 
-setup(name='PyVISA-sim',
-      description='Simulated backend for PyVISA implementing TCPIP, GPIB, RS232, and USB resources',
-      version='0.4.dev0',
+setup(name='PyVISA-sim-QCoDeS',
+      description='Simulated backend for PyVISA implementing TCPIP, GPIB, RS232, and USB resources. Fork with additional QCoDes features',
+      version='0.4.0',
       long_description=long_description,
       author='Hernan E. Grecco',
       author_email='hernan.grecco@gmail.com',
