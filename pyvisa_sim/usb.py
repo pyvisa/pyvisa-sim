@@ -75,6 +75,8 @@ class USBInstrumentSession(sessions.Session):
             # EOM 4882
             pass
 
+        return len(data), constants.StatusCode.success
+
 
 @sessions.Session.register(constants.InterfaceType.usb, 'RAW')
 class USBRawSession(sessions.Session):
@@ -127,3 +129,5 @@ class USBRawSession(sessions.Session):
         if send_end:
             # EOM 4882
             pass
+
+        return len(data), constants.StatusCode.success

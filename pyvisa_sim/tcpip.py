@@ -62,6 +62,8 @@ class BaseTCPIPSession(sessions.Session):
             # EOM 4882
             pass
 
+        return len(data), constants.StatusCode.success
+
 
 @sessions.Session.register(constants.InterfaceType.tcpip, 'INSTR')
 class TCPIPInstrumentSession(BaseTCPIPSession):
