@@ -69,3 +69,5 @@ class GPIBInstrumentSession(sessions.Session):
         if send_end:
             # EOM4882
             pass
+
+        return len(data), constants.StatusCode.success

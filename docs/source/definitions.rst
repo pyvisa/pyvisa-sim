@@ -7,7 +7,9 @@ PyVISA-sim provides some simulated instruments but the real cool thing is that
 it allows you to write your own in simple YAML_ files.
 
 Here we will go through the structure of such a file, using the `one provided
-with pyvisa-sim`_ as an example. The first line you will find is the specification version::
+with pyvisa-sim`_ as an example. The first line you will find is the specification version:
+
+.. code-block:: yaml
 
     spec: "1.1"
 
@@ -22,7 +24,9 @@ devices
 -------
 
 It is a dictionary that defines each device, its dialogues and properties. The keys of this
-dictionary are the device names which must be unique within this file. For example::
+dictionary are the device names which must be unique within this file. For example:
+
+.. code-block:: yaml
 
     devices:
         HP33120A:
@@ -37,7 +41,9 @@ eom
 ~~~
 
 Specifies the end-of-message for each instrument type and resource class pair.
-For example::
+For example:
+
+.. code-block:: yaml
 
     eom:
       ASRL INSTR:
@@ -62,10 +68,12 @@ or the user tries to set a property outside the right range. For example::
 
 This means that the word **ERROR** is returned.
 
-If you want to further customize how your device handles errors, you can split the 
+If you want to further customize how your device handles errors, you can split the
 error types in two: **command_error** which is returned when fed an invalid command
 or an out of range command, or **query_error** which is returned when trying to
-read an empty buffer. 
+read an empty buffer.
+
+.. code-block:: yaml
 
     error:
       response:
@@ -78,7 +86,7 @@ read an empty buffer.
 In addition to customizing how responses are generated you can specify a status
 register in which errors are tracked. Each element in the list specifies a
 single register so in the example above, if both a **command_error** and
-**query_error** are raised, then querying '*ESR?' will return '36'.
+**query_error** are raised, then querying `'*ESR?'` will return `'36'`.
 
 
 dialogues
@@ -86,6 +94,8 @@ dialogues
 
 This is one of the main concepts of PyVISA-sim. A dialogue is a query which may be followed
 by a response. The dialogues item is a list of elements, normally **q**, **r** pairs. Fore example::
+
+.. code-block:: yaml
 
     dialogues:
       - q: "?IDN"
@@ -103,7 +113,9 @@ properties
 
 This is the other important part of the device. Consider it as a dialogue with some memory. It is
 a dictionary. The key is the name of the property and the value is the property definition.
-For example::
+For example:
+
+.. code-block:: yaml
 
     properties:
       frequency:
@@ -119,7 +131,7 @@ For example::
           max: 100000
           type: float
 
-This says that there is a property called **frequency** with a default value of **100.0*.
+This says that there is a property called **frequency** with a default value of **100.0**.
 
 To get the current frequency value you need to send **?FREQ** and the response will be
 formatted as **{:.2f}**. This is the PEP3101_ formatting specification.
@@ -129,11 +141,15 @@ To set the frequency value you need to send **!FREQ** followed by a number forma
 If you want know more about it, take a look at the stringparser_ library.
 If setting the property was successful, the response will be **OK**.
 If there was an error, the response will be **ERROR** (the default). You can specify
-an error-specific error message for this setter as::
+an error-specific error message for this setter as:
+
+.. code-block:: yaml
 
             e: Some other error message.
 
-Finally you can specify the specs of the property::
+Finally you can specify the specs of the property:
+
+.. code-block:: yaml
 
         specs:
           min: 1
@@ -142,7 +158,9 @@ Finally you can specify the specs of the property::
 
 You can define the minimum (min) and maximum (max) values, and the type of the value
 (float, int, str).
-You can also specify the valid values, for example::
+You can also specify the valid values, for example:
+
+.. code-block:: yaml
 
         specs:
           valid: [1, 3, 5]
@@ -154,7 +172,9 @@ resources
 ---------
 
 It is a dictionary that binds resource names to device types. The keys of this
-dictionary are the resource names which must be unique within this file. For example::
+dictionary are the resource names which must be unique within this file. For example:
+
+.. code-block:: yaml
 
     resources:
         ASRL1::INSTR:
@@ -167,7 +187,9 @@ Within each resource, the type is specified under the **device** key. The associ
 is explained above. Notice that the same device type can be bound to different resource names,
 creating two different objects of the same type.
 
-You can also bind a resource name to device defined in another file. Simply do::
+You can also bind a resource name to device defined in another file. Simply do:
+
+.. code-block:: yaml
 
         ASRL3::INSTR:
             device: device 1
@@ -175,7 +197,9 @@ You can also bind a resource name to device defined in another file. Simply do::
 
 The path can specified in relation with the current file or in an absolute way.
 
-If you want to use a file which is bundled with PyVISA-sim, just write::
+If you want to use a file which is bundled with PyVISA-sim, just write:
+
+.. code-block:: yaml
 
         ASRL3::INSTR:
             device: device 1

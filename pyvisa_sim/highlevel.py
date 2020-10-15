@@ -9,14 +9,13 @@
     :license: MIT, see LICENSE for more details.
 """
 
-from __future__ import division, unicode_literals, print_function, absolute_import
-
 import random
 from traceback import format_exc
+from collections import OrderedDict
 
 from pyvisa import constants, highlevel, rname
 import pyvisa.errors as errors
-from pyvisa.compat import OrderedDict
+from pyvisa.util import LibraryPath
 
 from . import parser
 from . import sessions
@@ -39,6 +38,11 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
 
     Importantly, the user is unaware of this. PyVisaLibrary behaves for the user just as NIVisaLibrary.
     """
+
+    @staticmethod
+    def get_library_paths():
+        """List a dummy library path to allow to create the library."""
+        return (LibraryPath("unset"),)
 
     @staticmethod
     def get_debug_info():
@@ -205,12 +209,12 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         try:
             sess = self.sessions[session]
         except KeyError:
-            return constants.StatusCode.error_invalid_object
+            return 0, constants.StatusCode.error_invalid_object
 
         try:
             return sess.write(data)
         except AttributeError:
-            return constants.StatusCode.error_nonsupported_operation
+            return 0, constants.StatusCode.error_nonsupported_operation
 
     def get_attribute(self, session, attribute):
         """Retrieves the state of an attribute.
