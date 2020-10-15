@@ -1,7 +1,7 @@
 PyVISA-sim Changelog
 ====================
 
-0.4 (unreleased)
+0.4 (2020-10-26)
 ----------------
 
 - Use SCM based version number PR #53
