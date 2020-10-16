@@ -10,9 +10,10 @@
 """
 
 from __future__ import division, unicode_literals, print_function, absolute_import
+from six.moves import range
 
 try:
-    import Queue as queue
+    import six.moves.queue as queue
 except ImportError:
     import queue
 
@@ -89,6 +90,8 @@ class SerialInstrumentSession(sessions.Session):
         end_char, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR)
         end_char = common.int_to_byte(end_char)
 
+        len_transferred = len(data)
+
         if asrl_end == constants.SerialTermination.last_bit:
             last_bit, _ = self.get_attribute(constants.VI_ATTR_ASRL_DATA_BITS)
             mask = 1 << (last_bit - 1)
@@ -104,7 +107,7 @@ class SerialInstrumentSession(sessions.Session):
             if asrl_end == constants.SerialTermination.termination_char:
                 if send_end:
                     self.device.write(end_char)
-                    bytes_written += 1
+                    len_transferred += 1
 
             elif asrl_end == constants.SerialTermination.termination_break:
                 if send_end:
@@ -113,4 +116,5 @@ class SerialInstrumentSession(sessions.Session):
 
             elif not asrl_end == constants.SerialTermination.none:
                 raise ValueError('Unknown value for VI_ATTR_ASRL_END_OUT')
-        return bytes_written, constants.StatusCode.success
+
+        return len_transferred, constants.StatusCode.success

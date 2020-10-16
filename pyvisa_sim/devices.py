@@ -9,6 +9,7 @@
     :license: MIT, see LICENSE for more details.
 """
 
+from __future__ import absolute_import
 from pyvisa import constants, rname
 
 from .common import logger
@@ -30,7 +31,7 @@ class StatusRegister(object):
         self._value = self._value | self._error_map[error_key]
 
     def keys(self):
-        return self._error_map.keys()
+        return list(self._error_map.keys())
 
     @property
     def value(self):

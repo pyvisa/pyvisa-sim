@@ -16,6 +16,7 @@ import time
 from pyvisa import constants
 
 from . import sessions
+from six.moves import range
 
 
 class BaseTCPIPSession(sessions.Session):
@@ -60,7 +61,9 @@ class BaseTCPIPSession(sessions.Session):
         if send_end:
             # EOM 4882
             pass
-        return bytes_written, constants.StatusCode.success
+
+        return len(data), constants.StatusCode.success
+
 
 @sessions.Session.register(constants.InterfaceType.tcpip, 'INSTR')
 class TCPIPInstrumentSession(BaseTCPIPSession):

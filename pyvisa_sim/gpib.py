@@ -10,9 +10,10 @@
 """
 
 from __future__ import division, unicode_literals, print_function, absolute_import
+from six.moves import range
 
 try:
-    import Queue as queue
+    import six.moves.queue as queue
 except ImportError:
     import queue
 
@@ -68,4 +69,5 @@ class GPIBInstrumentSession(sessions.Session):
         if send_end:
             # EOM4882
             pass
-        return bytes_written, constants.StatusCode.success
+
+        return len(data), constants.StatusCode.success

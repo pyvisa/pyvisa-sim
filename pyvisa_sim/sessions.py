@@ -12,7 +12,7 @@
 from __future__ import division, unicode_literals, print_function, absolute_import
 
 try:
-    import Queue as queue
+    import six.moves.queue as queue
 except ImportError:
     import queue
 
@@ -115,6 +115,7 @@ class Session(object):
     def set_attribute(self, attribute, attribute_state):
         """Get an attribute from the session.
 
+        :param attribute_state:
         :param attribute:
         :return: attribute value, status code
         :rtype: object, constants.StatusCode
