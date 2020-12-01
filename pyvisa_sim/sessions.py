@@ -8,13 +8,7 @@
     :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
     :license: MIT, see LICENSE for more details.
 """
-
-from __future__ import division, unicode_literals, print_function, absolute_import
-
-try:
-    import six.moves.queue as queue
-except ImportError:
-    import queue
+import queue
 
 from pyvisa import constants, attributes, rname
 
@@ -49,7 +43,9 @@ class Session(object):
         try:
             return cls._session_classes[(interface_type, resource_class)]
         except KeyError:
-            raise ValueError('No class registered for %s, %s' % (interface_type, resource_class))
+            raise ValueError(
+                "No class registered for %s, %s" % (interface_type, resource_class)
+            )
 
     @classmethod
     def register(cls, interface_type, resource_class):
@@ -58,24 +54,31 @@ class Session(object):
         :type interface_type: constants.InterfaceType
         :type resource_class: str
         """
+
         def _internal(python_class):
             if (interface_type, resource_class) in cls._session_classes:
-                logger.warning('%s is already registered in the ResourceManager. '
-                               'Overwriting with %s' % ((interface_type, resource_class), python_class))
+                logger.warning(
+                    "%s is already registered in the ResourceManager. "
+                    "Overwriting with %s"
+                    % ((interface_type, resource_class), python_class)
+                )
 
             python_class.session_type = (interface_type, resource_class)
             cls._session_classes[(interface_type, resource_class)] = python_class
             return python_class
+
         return _internal
 
     def __init__(self, resource_manager_session, resource_name, parsed=None):
         if parsed is None:
             parsed = rname.parse_resource_name(resource_name)
         self.parsed = parsed
-        self.attrs = {constants.VI_ATTR_RM_SESSION: resource_manager_session,
-                      constants.VI_ATTR_RSRC_NAME: str(parsed),
-                      constants.VI_ATTR_RSRC_CLASS: parsed.resource_class,
-                      constants.VI_ATTR_INTF_TYPE: parsed.interface_type_const}
+        self.attrs = {
+            constants.VI_ATTR_RM_SESSION: resource_manager_session,
+            constants.VI_ATTR_RSRC_NAME: str(parsed),
+            constants.VI_ATTR_RSRC_CLASS: parsed.resource_class,
+            constants.VI_ATTR_INTF_TYPE: parsed.interface_type_const,
+        }
         self.after_parsing()
 
         #: devices.Device
@@ -107,10 +110,13 @@ class Session(object):
 
         # Check that the attribute is readable.
         if not attr.read:
-            raise Exception('Do not now how to handle write only attributes.')
+            raise Exception("Do not now how to handle write only attributes.")
 
         # Return the current value of the default according the VISA spec
-        return self.attrs.setdefault(attribute, attr.default), constants.StatusCode.success
+        return (
+            self.attrs.setdefault(attribute, attr.default),
+            constants.StatusCode.success,
+        )
 
     def set_attribute(self, attribute, attribute_state):
         """Get an attribute from the session.

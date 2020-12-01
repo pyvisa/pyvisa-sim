@@ -1,7 +1,7 @@
 name: Documentation building
 on:
   schedule:
-    - cron: '0 0 * * 2'
+    - cron: "0 0 * * 2"
   push:
     branches:
       - master
@@ -12,7 +12,7 @@ on:
       - master
     paths:
       - .github/workflows/docs.yml
-      - pyvisa/*
+      - pyvisa_sim/*
       - docs/*
       - setup.py
 

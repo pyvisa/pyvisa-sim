@@ -8,14 +8,7 @@
     :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
     :license: MIT, see LICENSE for more details.
 """
-
-from __future__ import division, unicode_literals, print_function, absolute_import
-from six.moves import range
-
-try:
-    import six.moves.queue as queue
-except ImportError:
-    import queue
+import queue
 
 import time
 
@@ -25,9 +18,8 @@ from . import common
 from . import sessions
 
 
-@sessions.Session.register(constants.InterfaceType.asrl, 'INSTR')
+@sessions.Session.register(constants.InterfaceType.asrl, "INSTR")
 class SerialInstrumentSession(sessions.Session):
-
     def after_parsing(self):
         self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed.board)
 
@@ -47,13 +39,13 @@ class SerialInstrumentSession(sessions.Session):
         mask = 1 << (last_bit - 1)
         start = time.time()
 
-        out = b''
+        out = b""
 
         while time.time() - start <= timeout:
             last = self.device.read()
 
             if not last:
-                time.sleep(.01)
+                time.sleep(0.01)
                 continue
 
             out += last
@@ -75,7 +67,7 @@ class SerialInstrumentSession(sessions.Session):
                     return out, constants.StatusCode.success_termination_character_read
 
             else:
-                raise ValueError('Unknown value for VI_ATTR_ASRL_END_IN')
+                raise ValueError("Unknown value for VI_ATTR_ASRL_END_IN")
 
             if len(out) == count:
                 return out, constants.StatusCode.success_max_count_read
@@ -99,7 +91,7 @@ class SerialInstrumentSession(sessions.Session):
         else:
 
             for i in range(len(data)):
-                self.device.write(data[i:i+1])
+                self.device.write(data[i : i + 1])
 
             if asrl_end == constants.SerialTermination.termination_char:
                 if send_end:
@@ -112,6 +104,6 @@ class SerialInstrumentSession(sessions.Session):
                     pass
 
             elif not asrl_end == constants.SerialTermination.none:
-                raise ValueError('Unknown value for VI_ATTR_ASRL_END_OUT')
+                raise ValueError("Unknown value for VI_ATTR_ASRL_END_OUT")
 
         return len_transferred, constants.StatusCode.success

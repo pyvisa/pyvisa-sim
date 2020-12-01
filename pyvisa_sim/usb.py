@@ -8,15 +8,7 @@
     :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
     :license: MIT, see LICENSE for more details.
 """
-
-from __future__ import division, unicode_literals, print_function, absolute_import
-from six.moves import range
-
-try:
-    import six.moves.queue as queue
-except ImportError:
-    import queue
-
+import queue
 import time
 
 from pyvisa import constants
@@ -24,11 +16,12 @@ from pyvisa import constants
 from . import sessions
 
 
-@sessions.Session.register(constants.InterfaceType.usb, 'INSTR')
+@sessions.Session.register(constants.InterfaceType.usb, "INSTR")
 class USBInstrumentSession(sessions.Session):
-
     def __init__(self, resource_manager_session, resource_name, parsed):
-        super(USBInstrumentSession, self).__init__(resource_manager_session, resource_name, parsed)
+        super(USBInstrumentSession, self).__init__(
+            resource_manager_session, resource_name, parsed
+        )
 
     def after_parsing(self):
         self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed.board)
@@ -45,13 +38,13 @@ class USBInstrumentSession(sessions.Session):
 
         start = time.time()
 
-        out = b''
+        out = b""
 
         while time.time() - start <= timeout:
             last = self.device.read()
 
             if not last:
-                time.sleep(.01)
+                time.sleep(0.01)
                 continue
 
             out += last
@@ -69,7 +62,7 @@ class USBInstrumentSession(sessions.Session):
         send_end = self.get_attribute(constants.VI_ATTR_SEND_END_EN)
 
         for i in range(len(data)):
-            self.device.write(data[i:i+1])
+            self.device.write(data[i : i + 1])
 
         if send_end:
             # EOM 4882
@@ -78,11 +71,12 @@ class USBInstrumentSession(sessions.Session):
         return len(data), constants.StatusCode.success
 
 
-@sessions.Session.register(constants.InterfaceType.usb, 'RAW')
+@sessions.Session.register(constants.InterfaceType.usb, "RAW")
 class USBRawSession(sessions.Session):
-
     def __init__(self, resource_manager_session, resource_name, parsed):
-        super(USBRawSession, self).__init__(resource_manager_session, resource_name, parsed)
+        super(USBRawSession, self).__init__(
+            resource_manager_session, resource_name, parsed
+        )
 
     def after_parsing(self):
         self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed.board)
@@ -99,13 +93,13 @@ class USBRawSession(sessions.Session):
 
         now = start = time.time()
 
-        out = b''
+        out = b""
 
         while now - start <= timeout:
             last = self.device.read()
 
             if not last:
-                time.sleep(.01)
+                time.sleep(0.01)
                 now = time.time()
                 continue
 
@@ -124,7 +118,7 @@ class USBRawSession(sessions.Session):
         send_end = self.get_attribute(constants.VI_ATTR_SEND_END_EN)
 
         for i in range(len(data)):
-            self.device.write(data[i:i+1])
+            self.device.write(data[i : i + 1])
 
         if send_end:
             # EOM 4882
