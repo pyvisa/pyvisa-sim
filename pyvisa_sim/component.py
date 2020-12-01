@@ -8,18 +8,16 @@
     :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
     :license: MIT, see LICENSE for more details.
 """
-from __future__ import absolute_import
 import stringparser
 
 from .common import logger
 
 
 def to_bytes(val):
-    """Takes a text message and return a tuple
-    """
+    """Takes a text message and return a tuple"""
     if val is NoResponse:
         return val
-    val = val.replace('\\r', '\r').replace('\\n', '\n')
+    val = val.replace("\\r", "\r").replace("\\n", "\n")
     return val.encode()
 
 
@@ -28,8 +26,7 @@ NoResponse = object()
 
 
 class Property(object):
-    """A device property
-    """
+    """A device property"""
 
     def __init__(self, name, value, specs):
         """
@@ -39,19 +36,19 @@ class Property(object):
         :return:
         """
 
-        t = specs.get('type', None)
+        t = specs.get("type", None)
         if t:
-            for key, val in (('float', float), ('int', int), ('str', str)):
+            for key, val in (("float", float), ("int", int), ("str", str)):
                 if t == key:
-                    t = specs['type'] = val
+                    t = specs["type"] = val
                     break
 
-        for key in ('min', 'max'):
+        for key in ("min", "max"):
             if key in specs:
                 specs[key] = t(specs[key])
 
-        if 'valid' in specs:
-            specs['valid'] = set([t(val) for val in specs['valid']])
+        if "valid" in specs:
+            specs["valid"] = set([t(val) for val in specs["valid"]])
 
         self.name = name
         self.specs = specs
@@ -59,44 +56,35 @@ class Property(object):
         self.init_value(value)
 
     def init_value(self, string_value):
-        """Initialize the value hold by the Property.
-
-        """
+        """Initialize the value hold by the Property."""
         self.set_value(string_value)
 
     def get_value(self):
-        """Return the value stored by the Property.
-
-        """
+        """Return the value stored by the Property."""
         return self._value
 
     def set_value(self, string_value):
-        """Set the value
-        """
+        """Set the value"""
         self._value = self.validate_value(string_value)
 
     def validate_value(self, string_value):
-        """Validate that a value match the Property specs.
-
-        """
+        """Validate that a value match the Property specs."""
         specs = self.specs
-        if 'type' in specs:
-            value = specs['type'](string_value)
+        if "type" in specs:
+            value = specs["type"](string_value)
         else:
             value = string_value
-        if 'min' in specs and value < specs['min']:
+        if "min" in specs and value < specs["min"]:
             raise ValueError
-        if 'max' in specs and value > specs['max']:
+        if "max" in specs and value > specs["max"]:
             raise ValueError
-        if 'valid' in specs and value not in specs['valid']:
+        if "valid" in specs and value not in specs["valid"]:
             raise ValueError
         return value
 
 
 class Component(object):
-    """A component of a device.
-
-    """
+    """A component of a device."""
 
     def __init__(self):
 
@@ -127,8 +115,7 @@ class Component(object):
         """
         self._dialogues[to_bytes(query)] = to_bytes(response)
 
-    def add_property(self, name, default_value, getter_pair, setter_triplet,
-                     specs):
+    def add_property(self, name, default_value, getter_pair, setter_triplet, specs):
         """Add property to device
 
         :param name: property name
@@ -145,15 +132,12 @@ class Component(object):
 
         if setter_triplet:
             query, response, error = setter_triplet
-            self._setters.append((name,
-                                  stringparser.Parser(query),
-                                  to_bytes(response),
-                                  to_bytes(error)))
+            self._setters.append(
+                (name, stringparser.Parser(query), to_bytes(response), to_bytes(error))
+            )
 
     def match(self, query):
-        """Try to find a match for a query in the instrument commands.
-
-        """
+        """Try to find a match for a query in the instrument commands."""
         raise NotImplementedError()
 
     def _match_dialog(self, query, dialogues=None):
@@ -170,7 +154,7 @@ class Component(object):
         # Try to match in the queries
         if query in dialogues:
             response = dialogues[query]
-            logger.debug('Found response in queries: %s' % repr(response))
+            logger.debug("Found response in queries: %s" % repr(response))
 
             return response
 
@@ -187,9 +171,9 @@ class Component(object):
 
         if query in getters:
             name, response = getters[query]
-            logger.debug('Found response in getter of %s' % name)
+            logger.debug("Found response in getter of %s" % name)
             response = response.format(self._properties[name].get_value())
-            return response.encode('utf-8')
+            return response.encode("utf-8")
 
     def _match_setters(self, query):
         """Tries to match in setters
@@ -199,11 +183,11 @@ class Component(object):
         :return: response if found or None
         :rtype: Tuple[bytes] | None
         """
-        q = query.decode('utf-8')
+        q = query.decode("utf-8")
         for name, parser, response, error_response in self._setters:
             try:
                 value = parser(q)
-                logger.debug('Found response in setter of %s' % name)
+                logger.debug("Found response in setter of %s" % name)
             except ValueError:
                 continue
 
@@ -213,6 +197,6 @@ class Component(object):
             except ValueError:
                 if isinstance(error_response, bytes):
                     return error_response
-                return self.error_response('command_error')
+                return self.error_response("command_error")
 
         return None

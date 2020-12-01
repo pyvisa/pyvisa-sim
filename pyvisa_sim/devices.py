@@ -8,8 +8,6 @@
     :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
     :license: MIT, see LICENSE for more details.
 """
-
-from __future__ import absolute_import
 from pyvisa import constants, rname
 
 from .common import logger
@@ -17,13 +15,12 @@ from .component import to_bytes, Component, NoResponse
 
 
 class StatusRegister(object):
-
     def __init__(self, values):
         object.__init__(self)
         self._value = 0
         self._error_map = {}
         for name, value in values.items():
-            if name == 'q':
+            if name == "q":
                 continue
             self._error_map[name] = int(value)
 
@@ -42,17 +39,16 @@ class StatusRegister(object):
 
 
 class ErrorQueue(object):
-
     def __init__(self, values):
 
         super(ErrorQueue, self).__init__()
         self._queue = []
         self._error_map = {}
         for name, value in values.items():
-            if name in ('q', 'default', 'strict'):
+            if name in ("q", "default", "strict"):
                 continue
             self._error_map[name] = to_bytes(value)
-        self._default = to_bytes(values['default'])
+        self._default = to_bytes(values["default"])
 
     def append(self, err):
         if err in self._error_map:
@@ -83,7 +79,7 @@ class Device(Component):
 
     # Default end of message used in query operations
     # :type: bytes
-    _query_eom = b''
+    _query_eom = b""
 
     # Default end of message used in response operations
     # :type: bytes
@@ -132,8 +128,7 @@ class Device(Component):
 
     @property
     def resource_name(self):
-        """Assigned resource name
-        """
+        """Assigned resource name"""
         return self._resource_name
 
     @resource_name.setter
@@ -141,50 +136,48 @@ class Device(Component):
         p = rname.parse_resource_name(value)
         self._resource_name = str(p)
         try:
-            self._query_eom, self._response_eom =\
-                self._eoms[(p.interface_type_const, p.resource_class)]
+            self._query_eom, self._response_eom = self._eoms[
+                (p.interface_type_const, p.resource_class)
+            ]
         except KeyError:
-            logger.warning('No eom provided for %s, %s.'
-                           'Using LF.'% (p.interface_type_const, p.resource_class))
-            self._query_eom, self._response_eom = b'\n', b'\n'
+            logger.warning(
+                "No eom provided for %s, %s."
+                "Using LF." % (p.interface_type_const, p.resource_class)
+            )
+            self._query_eom, self._response_eom = b"\n", b"\n"
 
     def add_channels(self, ch_name, ch_obj):
-        """Add a channel definition.
-
-        """
+        """Add a channel definition."""
         self._channels[ch_name] = ch_obj
 
     def add_error_handler(self, error_input):
-        """Add error handler to the device
-        """
+        """Add error handler to the device"""
 
         if isinstance(error_input, dict):
-            error_response = error_input.get('response', {})
-            cerr = error_response.get('command_error', NoResponse)
-            qerr = error_response.get('query_error', NoResponse)
+            error_response = error_input.get("response", {})
+            cerr = error_response.get("command_error", NoResponse)
+            qerr = error_response.get("query_error", NoResponse)
 
-            response_dict = {'command_error': cerr,
-                             'query_error': qerr}
+            response_dict = {"command_error": cerr, "query_error": qerr}
 
-            register_list = error_input.get('status_register', [])
+            register_list = error_input.get("status_register", [])
 
             for register_dict in register_list:
-                query = register_dict['q']
+                query = register_dict["q"]
                 register = StatusRegister(register_dict)
                 self._status_registers[to_bytes(query)] = register
                 for key in register.keys():
                     self._error_map[key] = register
 
-            queue_list = error_input.get('error_queue', [])
+            queue_list = error_input.get("error_queue", [])
 
             for queue_dict in queue_list:
-                query = queue_dict['q']
+                query = queue_dict["q"]
                 err_queue = ErrorQueue(queue_dict)
                 self._error_queues[to_bytes(query)] = err_queue
 
         else:
-            response_dict = {'command_error': error_input,
-                             'query_error': error_input}
+            response_dict = {"command_error": error_input, "query_error": error_input}
 
         for key, value in response_dict.items():
             self._error_response[key] = to_bytes(value)
@@ -205,12 +198,12 @@ class Device(Component):
         :param query_termination: end of message used in queries.
         :param response_termination: end of message used in responses.
         """
-        interface_type, resource_class = type_class.split(' ')
-        interface_type = getattr(constants.InterfaceType,
-                                 interface_type.lower())
-        self._eoms[(interface_type,
-                    resource_class)] = (to_bytes(query_termination),
-                                        to_bytes(response_termination))
+        interface_type, resource_class = type_class.split(" ")
+        interface_type = getattr(constants.InterfaceType, interface_type.lower())
+        self._eoms[(interface_type, resource_class)] = (
+            to_bytes(query_termination),
+            to_bytes(response_termination),
+        )
 
     def write(self, data):
         """Write data into the device input buffer.
@@ -218,12 +211,12 @@ class Device(Component):
         :param data: single element byte
         :type data: bytes
         """
-        logger.debug('Writing into device input buffer: %r' % data)
+        logger.debug("Writing into device input buffer: %r" % data)
         if not isinstance(data, bytes):
-            raise TypeError('data must be an instance of bytes')
+            raise TypeError("data must be an instance of bytes")
 
         if len(data) != 1:
-            msg = 'data must have a length of 1, not %d'
+            msg = "data must have a length of 1, not %d"
             raise ValueError(msg % len(data))
 
         self._input_buffer.extend(data)
@@ -234,14 +227,13 @@ class Device(Component):
 
         try:
             message = bytes(self._input_buffer[:-l])
-            queries = (message.split(self.delimiter) if self.delimiter
-                       else [message])
+            queries = message.split(self.delimiter) if self.delimiter else [message]
             for query in queries:
                 response = self._match(query)
                 eom = self._response_eom
 
                 if response is None:
-                    response = self.error_response('command_error')
+                    response = self.error_response("command_error")
 
                 if response is not NoResponse:
                     self._output_buffer.extend(response)
@@ -251,14 +243,12 @@ class Device(Component):
             self._input_buffer = bytearray()
 
     def read(self):
-        """Return a single byte from the output buffer
-        """
+        """Return a single byte from the output buffer"""
         if self._output_buffer:
-            b, self._output_buffer = (self._output_buffer[0:1],
-                                      self._output_buffer[1:])
+            b, self._output_buffer = (self._output_buffer[0:1], self._output_buffer[1:])
             return b
 
-        return b''
+        return b""
 
     def _match(self, query):
         """Tries to match in dialogues, getters and setters and subcomponents
@@ -307,8 +297,7 @@ class Device(Component):
         if query in self._status_registers:
             register = self._status_registers[query]
             response = register.value
-            logger.debug('Found response in status register: %s',
-                         repr(response))
+            logger.debug("Found response in status register: %s", repr(response))
             register.clear()
 
             return response
@@ -324,16 +313,13 @@ class Device(Component):
         if query in self._error_queues:
             queue = self._error_queues[query]
             response = queue.value
-            logger.debug('Found response in error queue: %s',
-                         repr(response))
+            logger.debug("Found response in error queue: %s", repr(response))
 
             return response
 
 
 class Devices(object):
-    """The group of connected devices.
-
-    """
+    """The group of connected devices."""
 
     def __init__(self):
 
@@ -342,11 +328,10 @@ class Devices(object):
         self._internal = {}
 
     def add_device(self, resource_name, device):
-        """Bind device to resource name
-        """
+        """Bind device to resource name"""
 
         if device.resource_name is not None:
-            msg = 'The device %r is already assigned to %s'
+            msg = "The device %r is already assigned to %s"
             raise ValueError(msg % (device, device.resource_name))
 
         device.resource_name = resource_name
