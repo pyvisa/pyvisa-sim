@@ -24,8 +24,10 @@ class GPIBInstrumentSession(sessions.Session):
         self.attrs[constants.VI_ATTR_GPIB_PRIMARY_ADDR] = int(
             self.parsed.primary_address
         )
-        self.attrs[constants.VI_ATTR_GPIB_SECONDARY_ADDR] = int(
-            self.parsed.secondary_address
+        self.attrs[constants.VI_ATTR_GPIB_SECONDARY_ADDR] = (
+            int(self.parsed.secondary_address)
+            if self.parsed.secondary_address is not None
+            else constants.VI_NO_SEC_ADDR
         )
 
     def read(self, count):
