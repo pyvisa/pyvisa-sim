@@ -1,7 +1,24 @@
-|Build Status|
-
 PyVISA-sim
 ==========
+
+.. image:: https://github.com/pyvisa/pyvisa-sim/workflows/Continuous%20Integration/badge.svg
+    :target: https://github.com/pyvisa/pyvisa-sim/actions
+    :alt: Continuous integration
+.. image:: https://github.com/pyvisa/pyvisa-sim/workflows/Documentation%20building/badge.svg
+    :target: https://github.com/pyvisa/pyvisa/actions
+    :alt: Documentation building
+.. image:: https://codecov.io/gh/pyvisa/pyvisa-sim/branch/main/graph/badge.svg
+    :target: https://codecov.io/gh/pyvisa/pyvisa-sim
+    :alt: Code Coverage
+.. image:: https://readthedocs.org/projects/pyvisa-sim/badge/?version=latest
+    :target: https://pyvisa-sim.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+.. image:: https://img.shields.io/pypi/l/PyVISA-sim
+    :target: https://pypi.python.org/pypi/pyvisa-sim
+    :alt: PyPI - License
+.. image:: https://img.shields.io/pypi/v/PyVISA-sim
+    :target: https://pypi.python.org/pypi/pyvisa-sim
+    :alt: PyPI
 
 PyVISA-sim is a PyVISA backend that simulates a large part of the
 "Virtual Instrument Software Architecture" (`VISA`_).
@@ -39,7 +56,7 @@ measurement controlling:
 Requirements
 ------------
 
--  Python (tested with 2.7, and 3.4 to 3.8)
+-  Python (tested with 3.6 to 3.9)
 -  PyVISA 1.6+
 
 Installation
@@ -57,20 +74,6 @@ or install the development version:
 PyVISA is automatically installed if needed.
 
 
-Testing
--------
-
-Ensure you have ``tox`` installed.
-Then you can simply invoke
-
-   $ tox
-
-to run tests for all supported Python versions, or select one with
-
-   $ tox -e pyXY
-
-with ``X`` being the major version (2 or 3) and ``Y`` the minor version.
-
 Documentation
 -------------
 
@@ -80,6 +83,3 @@ The documentation can be read online at
 .. _VISA: http://www.ivifoundation.org/Downloads/Specifications.htm
 .. _`https://github.com/pyvisa/pyvisa-sim/zipball/master`: https://github.com/pyvisa/pyvisa-sim/zipball/master
 .. _`https://pyvisa-sim.readthedocs.org`: https://pyvisa-sim.readthedocs.org
-
-.. |Build Status| image:: https://travis-ci.org/pyvisa/pyvisa-sim.svg?branch=master
-   :target: https://travis-ci.org/pyvisa/pyvisa-sim

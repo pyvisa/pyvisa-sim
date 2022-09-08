@@ -1,6 +1,11 @@
 PyVISA-sim Changelog
 ====================
 
+0.5.1 (2022-09-08)
+------------------
+
+- fix rendering issues in the README
+
 0.5 (2022-09-08)
 ----------------
 
