@@ -1,6 +1,12 @@
 PyVISA-sim Changelog
 ====================
 
+0.5 (2022-09-08)
+----------------
+
+- add support for secondary GPIB addresses
+- remove last uses of the six package and of ``__future__`` imports
+
 0.4 (2020-10-26)
 ----------------
 
