@@ -10,6 +10,8 @@
 """
 import stringparser
 
+import random
+
 from .common import logger
 
 
@@ -192,11 +194,23 @@ class Component(object):
                 continue
 
             try:
+                if value == "RANDOM":
+                    if self._properties[name].specs["type"] == str:
+                        value = random.choice(tuple(self._properties[name].specs["valid"]))
+                    elif self._properties[name].specs["type"] == float:
+                        min = self._properties[name].specs["min"]
+                        max = self._properties[name].specs["max"]
+                        value = random.uniform(min, max)
+                    elif self._properties[name].specs.type == int:
+                        min = self._properties[name].specs["min"]
+                        max = self._properties[name].specs["max"]
+                        value = random.randint(min, max)
+
                 self._properties[name].set_value(value)
                 return response
             except ValueError:
                 if isinstance(error_response, bytes):
                     return error_response
-                return self.error_response("command_error")
+                return self.error_response('command_error')
 
         return None

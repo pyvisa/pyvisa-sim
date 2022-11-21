@@ -93,7 +93,7 @@ dialogues
 ~~~~~~~~~
 
 This is one of the main concepts of PyVISA-sim. A dialogue is a query which may be followed
-by a response. The dialogues item is a list of elements, normally **q**, **r** pairs. Fore example::
+by a response. The dialogues item is a list of elements, normally **q**, **r** pairs. For example::
 
 .. code-block:: yaml
 
