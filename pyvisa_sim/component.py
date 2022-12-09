@@ -187,8 +187,7 @@ class Connection(object):
     def __init__(self, q, source_list, function):
         """
         :param q: query to use
-        :param source: resource to connect to
-        :param source_parameter: resource output parameter
+        :param source_list: list of sources to connect with
         :param function: function to apply
         """
 
@@ -386,30 +385,27 @@ class Component:
             connections = self._connections
 
         # Check every connection for query match
-        for connection in connections:
-            if (connections[connection].q).encode("utf-8") == query:
+        for connection in connections.values():
+            if (connection.q).encode("utf-8") == query:
 
-                # function as written in yaml
-                func = connections[connection].function
+                prop_dict = {}
 
-                for source in connections[connection].source_list:
+                for source in connection.source_list:
                     # Find source for connection
-                    if source["source_name"] == "self":
-                        value = self._properties[source["source_parameter"]]._value
-                        func = func.replace('%' + source["source_parameter"] + '%', str(value))
-                    else:
 
-                        for device in self.devices._internal:
-                            if device == source["source_name"]:
-                                # Find correct property
-                                for property in self.devices._internal[device]._properties:
-                                    if property == source["source_parameter"]:
-                                        # Replace parameter in func with value of property
-                                        value = self.devices._internal[device]._properties[property]._value
-                                        func = func.replace('%' + property + '%', str(value))
-                                        break
-                                break
-                # Run function
+                    for device in self.devices._internal:
+                        if device == source["source_name"]:
+                            # Find correct property
+                            for property in self.devices._internal[device]._properties:
+                                if property == source["source_parameter"]:
+                                    # Add property and value to prop_dict
+                                    value = self.devices._internal[device]._properties[property]._value
+                                    prop_dict[property] = value
+                                    break
+                            break
+                
+                # Populate and run function
+                func = connection.function.format(**prop_dict)
                 response = str(eval(func))
                 logger.debug("Found response in queries: %s" % response)
                 return response.encode("utf-8")

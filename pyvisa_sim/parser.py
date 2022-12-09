@@ -162,7 +162,7 @@ def update_component(
             raise type(e)(msg % (name, conn_name, format_exc()))
 
     try:
-        comp.add_devices(devices)
+        comp.set_devices(devices)
     except Exception as e:
         msg = "In device %s, malformed devices %s\n%r"
         raise Exception(msg % (name, devices, e))

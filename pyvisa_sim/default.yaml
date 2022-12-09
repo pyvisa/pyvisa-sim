@@ -323,9 +323,9 @@ devices:
         q: "READ1"
         source_list: [
           {source_name: "GPIB0::2::65535::INSTR", source_parameter: amplitude},
-          {source_name: "self", source_parameter: frequency}
+          {source_name: "GPIB0::22::65535::INSTR", source_parameter: frequency}
         ]
-        function: "0.23 * (%amplitude% ** 2) - %frequency%"
+        function: "0.23 * ({amplitude} ** 2) - {frequency}"
   device 6:
     eom:
       ASRL INSTR:
