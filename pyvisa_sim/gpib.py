@@ -9,7 +9,6 @@
     :license: MIT, see LICENSE for more details.
 """
 import queue
-
 import time
 
 from pyvisa import constants

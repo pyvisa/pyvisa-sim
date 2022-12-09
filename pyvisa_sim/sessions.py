@@ -10,7 +10,7 @@
 """
 import queue
 
-from pyvisa import constants, attributes, rname
+from pyvisa import attributes, constants, rname
 
 from .common import logger
 

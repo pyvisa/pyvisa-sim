@@ -12,7 +12,6 @@ import pkg_resources
 
 from .highlevel import SimVisaLibrary
 
-
 __version__ = "unknown"
 try:  # pragma: no cover
     __version__ = pkg_resources.get_distribution("pyvisa-sim").version

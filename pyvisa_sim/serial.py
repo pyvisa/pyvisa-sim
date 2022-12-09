@@ -9,13 +9,11 @@
     :license: MIT, see LICENSE for more details.
 """
 import queue
-
 import time
 
 from pyvisa import constants
 
-from . import common
-from . import sessions
+from . import common, sessions
 
 
 @sessions.Session.register(constants.InterfaceType.asrl, "INSTR")

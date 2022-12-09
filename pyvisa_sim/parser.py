@@ -9,16 +9,16 @@
     :license: MIT, see LICENSE for more details.
 """
 import os
-from io import open, StringIO
 from contextlib import closing
+from io import StringIO, open
 from traceback import format_exc
 
 import pkg_resources
 import yaml
 
-from .component import NoResponse
-from .devices import Devices, Device
 from .channels import Channels
+from .component import NoResponse
+from .devices import Device, Devices
 
 
 def _ver_to_tuple(ver):
