@@ -11,7 +11,7 @@
 from pyvisa import constants, rname
 
 from .common import logger
-from .component import to_bytes, Component, NoResponse
+from .component import Component, NoResponse, to_bytes
 
 
 class StatusRegister(object):

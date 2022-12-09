@@ -10,18 +10,15 @@
 """
 
 import random
-from traceback import format_exc
 from collections import OrderedDict
+from traceback import format_exc
 
-from pyvisa import constants, highlevel, rname
 import pyvisa.errors as errors
+from pyvisa import constants, highlevel, rname
 from pyvisa.util import LibraryPath
 
-from . import parser
-from . import sessions
-
 # This import is required to register subclasses
-from . import gpib, serial, tcpip, usb
+from . import gpib, parser, serial, sessions, tcpip, usb
 
 
 class SimVisaLibrary(highlevel.VisaLibraryBase):
@@ -46,13 +43,13 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
 
     @staticmethod
     def get_debug_info():
-        """Return a list of lines with backend info.
-        """
+        """Return a list of lines with backend info."""
         from . import __version__
         from .parser import SPEC_VERSION
+
         d = OrderedDict()
-        d['Version'] = '%s' % __version__
-        d['Spec version'] = SPEC_VERSION
+        d["Version"] = "%s" % __version__
+        d["Spec version"] = SPEC_VERSION
 
         return d
 
@@ -63,12 +60,12 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         self.sessions = {}
 
         try:
-            if self.library_path == 'unset':
-                self.devices = parser.get_devices('default.yaml', True)
+            if self.library_path == "unset":
+                self.devices = parser.get_devices("default.yaml", True)
             else:
                 self.devices = parser.get_devices(self.library_path, False)
         except Exception as e:
-            msg = 'Could not parse definitions file. %r'
+            msg = "Could not parse definitions file. %r"
             raise type(e)(msg % format_exc())
 
     def _register(self, obj):
@@ -88,8 +85,13 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         return session
 
     # noinspection PyShadowingBuiltins
-    def open(self, session, resource_name,
-             access_mode=constants.AccessModes.no_lock, open_timeout=constants.VI_TMO_IMMEDIATE):
+    def open(
+        self,
+        session,
+        resource_name,
+        access_mode=constants.AccessModes.no_lock,
+        open_timeout=constants.VI_TMO_IMMEDIATE,
+    ):
         """Opens a session to the specified resource.
 
         Corresponds to viOpen function of the VISA library.
@@ -108,7 +110,10 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         try:
             open_timeout = int(open_timeout)
         except ValueError:
-            raise ValueError('open_timeout (%r) must be an integer (or compatible type)' % open_timeout)
+            raise ValueError(
+                "open_timeout (%r) must be an integer (or compatible type)"
+                % open_timeout
+            )
 
         try:
             parsed = rname.parse_resource_name(resource_name)
@@ -116,7 +121,9 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
             return 0, constants.StatusCode.error_invalid_resource_name
 
         # Loops through all session types, tries to parse the resource name and if ok, open it.
-        cls = sessions.Session.get_session_class(parsed.interface_type_const, parsed.resource_class)
+        cls = sessions.Session.get_session_class(
+            parsed.interface_type_const, parsed.resource_class
+        )
 
         sess = cls(session, resource_name, parsed)
 
@@ -152,7 +159,7 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         """
         return self._register(self), constants.StatusCode.success
 
-    def list_resources(self, session, query='?*::INSTR'):
+    def list_resources(self, session, query="?*::INSTR"):
         """Returns a tuple of all connected devices matching query.
 
         :param session:
@@ -184,7 +191,7 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         try:
             sess = self.sessions[session]
         except KeyError:
-            return b'', constants.StatusCode.error_invalid_object
+            return b"", constants.StatusCode.error_invalid_object
 
         try:
             chunk, status = sess.read(count)
@@ -192,7 +199,7 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
                 raise errors.VisaIOError(constants.VI_ERROR_TMO)
             return chunk, status
         except AttributeError:
-            return b'', constants.StatusCode.error_nonsupported_operation
+            return b"", constants.StatusCode.error_nonsupported_operation
 
     def write(self, session, data):
         """Writes data to device or interface synchronously.
