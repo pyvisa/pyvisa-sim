@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-    pyvisa-sim.tcpip
-    ~~~~~~~~~~~~~~~~
+"""TCPIP simulated session class.
 
-    TCPIP simulated session class.
+:copyright: 2014-2022 by PyVISA-sim Authors, see AUTHORS for more details.
+:license: MIT, see LICENSE for more details.
 
-    :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
-    :license: MIT, see LICENSE for more details.
 """
 import time
 

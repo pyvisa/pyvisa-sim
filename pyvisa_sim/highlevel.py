@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-    pyvisa-sim.highlevel
-    ~~~~~~~~~~~~~~~~~~~~
+"""Simulated VISA Library.
 
-    Simulated VISA Library.
+:copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
+:license: MIT, see LICENSE for more details.
 
-    :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
-    :license: MIT, see LICENSE for more details.
 """
 
 import random
@@ -18,7 +15,7 @@ from pyvisa import constants, highlevel, rname
 from pyvisa.util import LibraryPath
 
 # This import is required to register subclasses
-from . import gpib, parser, serial, sessions, tcpip, usb
+from . import gpib, parser, serial, sessions, tcpip, usb  # noqa
 
 
 class SimVisaLibrary(highlevel.VisaLibraryBase):

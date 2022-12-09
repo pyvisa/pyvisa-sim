@@ -1,15 +1,10 @@
 # -*- coding: utf-8 -*-
+"""Base session class.
+
+:copyright: 2014-2022 by PyVISA-sim Authors, see AUTHORS for more details.
+:license: MIT, see LICENSE for more details.
+
 """
-    pyvisa-sim.sessions
-    ~~~~~~~~~~~~~~~~~~~
-
-    Base session class.
-
-    :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
-    :license: MIT, see LICENSE for more details.
-"""
-import queue
-
 from pyvisa import attributes, constants, rname
 
 from .common import logger

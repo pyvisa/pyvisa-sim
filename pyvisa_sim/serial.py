@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
-"""
-    pyvisa-sim.serial
-    ~~~~~~~~~~~~~~~~~
+"""ASRL (Serial) simulated session class.
 
-    ASRL (Serial) simulated session class.
+:copyright: 2014-2022 by PyVISA-sim Authors, see AUTHORS for more details.
+:license: MIT, see LICENSE for more details.
 
-    :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
-    :license: MIT, see LICENSE for more details.
 """
-import queue
 import time
 
 from pyvisa import constants

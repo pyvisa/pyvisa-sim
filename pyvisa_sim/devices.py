@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-    pyvisa-sim.devices
-    ~~~~~~~~~~~~~~~~~~
+"""Classes to simulate devices.
 
-    Classes to simulate devices.
+:copyright: 2014-2022 by PyVISA-sim Authors, see AUTHORS for more details.
+:license: MIT, see LICENSE for more details.
 
-    :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
-    :license: MIT, see LICENSE for more details.
 """
 from pyvisa import constants, rname
 
@@ -221,12 +218,12 @@ class Device(Component):
 
         self._input_buffer.extend(data)
 
-        l = len(self._query_eom)
+        le = len(self._query_eom)
         if not self._input_buffer.endswith(self._query_eom):
             return
 
         try:
-            message = bytes(self._input_buffer[:-l])
+            message = bytes(self._input_buffer[:-le])
             queries = message.split(self.delimiter) if self.delimiter else [message]
             for query in queries:
                 response = self._match(query)

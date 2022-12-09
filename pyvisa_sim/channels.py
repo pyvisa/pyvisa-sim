@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-    pyvisa-sim.channel
-    ~~~~~~~~~~~~~~~~~~
+"""Classes to enable the use of channels in devices.
 
-    Classes to enable the use of channels in devices.
+:copyright: 2014-2022 by PyVISA-sim Authors, see AUTHORS for more details.
+:license: MIT, see LICENSE for more details.
 
-    :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
-    :license: MIT, see LICENSE for more details.
 """
 from collections import defaultdict
 

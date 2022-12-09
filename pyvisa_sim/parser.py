@@ -1,19 +1,16 @@
 # -*- coding: utf-8 -*-
-"""
-    pyvisa-sim.parser
-    ~~~~~~~~~~~~~~~~~
+"""Parser function
 
-    Parser function
+:copyright: 2014-2022 by PyVISA-sim Authors, see AUTHORS for more details.
+:license: MIT, see LICENSE for more details.
 
-    :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
-    :license: MIT, see LICENSE for more details.
 """
 import os
 from contextlib import closing
 from io import StringIO, open
 from traceback import format_exc
 
-import pkg_resources
+import pkg_resources  # XXX use importlib.resources instead
 import yaml
 
 from .channels import Channels
@@ -85,16 +82,16 @@ def _load(content_or_fp):
 
     try:
         ver = data["spec"]
-    except:
-        raise ValueError("The file does not specify a spec version")
+    except Exception as e:
+        raise ValueError("The file does not specify a spec version") from e
 
     try:
         ver = tuple(map(int, (ver.split("."))))
-    except:
+    except Exception as e:
         raise ValueError(
             "Invalid spec version format. Expect 'X.Y'"
             " (X and Y integers), found %s" % ver
-        )
+        ) from e
 
     if ver > SPEC_VERSION_TUPLE:
         raise ValueError(
