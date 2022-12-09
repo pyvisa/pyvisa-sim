@@ -56,8 +56,8 @@ measurement controlling:
 Requirements
 ------------
 
--  Python (tested with 3.6 to 3.9)
--  PyVISA 1.6+
+-  Python (tested with 3.8 to 3.11)
+-  PyVISA 1.11+
 
 Installation
 ------------
@@ -68,8 +68,8 @@ Using ``pip``:
 
 or install the development version:
 
-   $ pip install -U
-   `https://github.com/pyvisa/pyvisa-sim/zipball/master`_
+   $ pip install
+   `git+https://github.com/pyvisa/pyvisa-sim`_
 
 PyVISA is automatically installed if needed.
 
