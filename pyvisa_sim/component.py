@@ -180,6 +180,21 @@ class Property(Generic[T]):
         return value
 
     # --- Private API
+    
+class Connection(object):
+    """A device connection"""
+
+    def __init__(self, q, source_list, function):
+        """
+        :param q: query to use
+        :param source: resource to connect to
+        :param source_parameter: resource output parameter
+        :param function: function to apply
+        """
+
+        self.q = q
+        self.source_list = source_list
+        self.function = function
 
     #: Current value of the property.
     _value: Optional[T]
@@ -193,6 +208,7 @@ class Component:
         self._properties = {}
         self._getters = {}
         self._setters = []
+        self.devices = []
 
     def add_dialogue(self, query: str, response: str) -> None:
         """Add dialogue to device.
@@ -356,3 +372,44 @@ class Component:
                     return error_response
 
         return None
+    
+    def _match_connection(self, query, connections=None):
+        """Tries to match in connections
+
+        :param query: message tuple
+        :type query: Tuple[bytes]
+        :return: response if found or None
+        :rtype: Tuple[bytes] | None
+        """
+        
+        if connections is None:
+            connections = self._connections
+
+        # Check every connection for query match
+        for connection in connections:
+            if (connections[connection].q).encode("utf-8") == query:
+
+                # function as written in yaml
+                func = connections[connection].function
+
+                for source in connections[connection].source_list:
+                    # Find source for connection
+                    if source["source_name"] == "self":
+                        value = self._properties[source["source_parameter"]]._value
+                        func = func.replace('%' + source["source_parameter"] + '%', str(value))
+                    else:
+
+                        for device in self.devices._internal:
+                            if device == source["source_name"]:
+                                # Find correct property
+                                for property in self.devices._internal[device]._properties:
+                                    if property == source["source_parameter"]:
+                                        # Replace parameter in func with value of property
+                                        value = self.devices._internal[device]._properties[property]._value
+                                        func = func.replace('%' + property + '%', str(value))
+                                        break
+                                break
+                # Run function
+                response = str(eval(func))
+                logger.debug("Found response in queries: %s" % response)
+                return response.encode("utf-8")

@@ -241,6 +241,143 @@ devices:
           min: 1
           max: 6
           type: float
+  device 5:
+    eom:
+      ASRL INSTR:
+        q: "\r\n"
+        r: "\n"
+      USB INSTR:
+        q: "\r\n"
+        r: "\n"
+      TCPIP INSTR:
+        q: "\r\n"
+        r: "\n"
+      TCPIP SOCKET:
+        q: "\r\n"
+        r: "\n"
+      GPIB INSTR:
+        q: "\r\n"
+        r: "\n"
+    error: ERROR
+    dialogues:
+      - q: "*IDN?"
+        r: "HEWLETT-PACKARD, E3632A,0,1.2-5.0-1.0"
+      - q: "SYST:ERR?"
+        r: "NO ERROR"
+      - q: "SOUR1:POW?"
+        r: "2"
+      - q: "RUN:FUNCTION"
+        r: "hello {:}"
+    properties:
+      frequency:
+        default: 1.0
+        getter:
+          q: "SENS1:FREQ?"
+          r: "{:.2f}"
+        setter:
+          q: "SENS1:FREQ {:.2f} MHZ"
+          r: ""
+          e: "FREQ ERROR"
+        specs:
+          min: 0.0
+          max: 27.0
+          type: float
+      current limit:
+        default: 1.0
+        getter:
+          q: "MEAS:CURR?"
+          r: "{:.2f}"
+        setter:
+          q: "CURR:LIM {:}"
+          r: ""
+          e: 'CURRENT_ERROR'
+        specs:
+          min: 0.0
+          max: 7.0
+          type: float
+      voltage:
+        default: 1.0
+        getter:
+          q: "MEAS:VOLT?"
+          r: "{:.2f}"
+        setter:
+          q: "VOLT {:.2f}"
+          r: ""
+        specs:
+          min: 0
+          max: 30
+          type: float
+      output_enabled:
+        default: '0'
+        getter:
+          q: "OUTPUT:STATE?"
+          r: "{:s}"
+        setter:
+          q: "OUTPUT:STATE {:s}"
+          r: ""
+        specs:
+          valid: ['0', '1', 'ON', 'OFF']
+          type: str
+    connections:
+      power:
+        q: "READ1"
+        source_list: [
+          {source_name: "GPIB0::2::65535::INSTR", source_parameter: amplitude},
+          {source_name: "self", source_parameter: frequency}
+        ]
+        function: "0.23 * (%amplitude% ** 2) - %frequency%"
+  device 6:
+    eom:
+      ASRL INSTR:
+        q: "\r\n"
+        r: "\n"
+      USB INSTR:
+        q: "\r\n"
+        r: "\n"
+      TCPIP INSTR:
+        q: "\r\n"
+        r: "\n"
+      TCPIP SOCKET:
+        q: "\r\n"
+        r: "\n"
+      GPIB INSTR:
+        q: "\r\n"
+        r: "\n"
+    error: ERROR
+    dialogues:
+      - q: "*IDN?"
+        r: "Hewlett-Packard, ESG-D4000B, GB40050924, B.03.86"
+      - q: "*OPC?"
+        r: "Hewlett-Packard, ESG-D4000B, GB40050924, B.03.86"
+      - q: "SYST:ERR?"
+        r: "NO ERROR"
+    properties:
+      frequency:
+        default: 1.0
+        getter:
+          q: "FREQ?"
+          r: "{:.2f}"
+        setter:
+          q: "FREQ {:.2f}MHZ"
+          r: ""
+          e: "FREQ ERROR"
+        specs:
+          min: 0.0
+          max: 6.0
+          type: float
+      amplitude:
+        default: 0.0
+        getter:
+          q: "POW:LEV?"
+          r: "{:.2f}"
+        setter:
+          q: "POW:LEV {:.2f}"
+          r: ""
+          e: "POW ERROR"
+        specs:
+          min: -100.0
+          max: 20.0
+          type: float
 
 resources:
   ASRL1::INSTR:
@@ -279,3 +416,7 @@ resources:
     device: device 4
   USB::0x1111::0x2222::0x4445::RAW:
     device: device 1
+  GPIB0::22::INSTR:
+    device: device 5
+  GPIB0::2::INSTR:
+    device: device 6
