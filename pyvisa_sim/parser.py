@@ -265,7 +265,7 @@ def get_device(
 
     for ch_name, ch_dict in device_dict.get("channels", {}).items():
         device.add_channels(
-            ch_name, get_channel(device, ch_name, ch_dict, loader, resource_dict)
+            ch_name, get_channel(device, ch_name, ch_dict, loader, resource_dict, devices)
         )
 
     return device
