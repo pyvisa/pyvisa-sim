@@ -23,7 +23,7 @@ from typing import (
     Union,
 )
 
-import pkg_resources  # XXX use importlib.resources instead
+import importlib.resources
 import yaml
 
 from .channels import Channels
@@ -121,7 +121,7 @@ def _load(content_or_fp: Union[str, bytes, TextIO, BinaryIO]) -> Dict[str, Any]:
 
 def parse_resource(name: str) -> Dict[str, Any]:
     """Parse a resource file"""
-    with closing(pkg_resources.resource_stream(__name__, name)) as fp:
+    with closing(importlib.resources.open_binary("pyvisa_sim", name)) as fp:
         rbytes = fp.read()
 
     return _load(StringIO(rbytes.decode("utf-8")))
