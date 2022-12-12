@@ -5,12 +5,18 @@
 :license: MIT, see LICENSE for more details.
 
 """
-from pyvisa import attributes, constants, rname
+from typing import Any, Dict, Tuple, Type, Optional, Callable, TypeVar
 
-from .common import logger
+from pyvisa import attributes, constants, rname, typing
+
+from ..devices import Device
+from ..common import logger
 
 
-class Session(object):
+S = TypeVar("S", bound="Session")
+
+
+class Session:
     """A base class for Session objects.
 
     Just makes sure that common methods are defined and information is stored.
@@ -22,13 +28,20 @@ class Session(object):
 
     #: Maps (Interface Type, Resource Class) to Python class encapsulating that resource.
     #: dict[(Interface Type, Resource Class) , Session]
-    _session_classes = dict()
+    _session_classes: Dict[
+        Tuple[constants.InterfaceType, str], Type["Session"]
+    ] = dict()
 
     #: Session handler for the resource manager.
-    session_type = None
+    session_type: Tuple[constants.InterfaceType, str]
+
+    #: Simulated device access by this session
+    device: Device
 
     @classmethod
-    def get_session_class(cls, interface_type, resource_class):
+    def get_session_class(
+        cls, interface_type: constants.InterfaceType, resource_class: str
+    ) -> Type["Session"]:
         """Return the session class for a given interface type and resource class.
 
         :type interface_type: constants.InterfaceType
@@ -43,7 +56,9 @@ class Session(object):
             )
 
     @classmethod
-    def register(cls, interface_type, resource_class):
+    def register(
+        cls, interface_type: constants.InterfaceType, resource_class: str
+    ) -> Callable[[Type[S]], Type[S]]:
         """Register a session class for a given interface type and resource class.
 
         :type interface_type: constants.InterfaceType
@@ -64,7 +79,12 @@ class Session(object):
 
         return _internal
 
-    def __init__(self, resource_manager_session, resource_name, parsed=None):
+    def __init__(
+        self,
+        resource_manager_session: typing.VISARMSession,
+        resource_name: str,
+        parsed: Optional[rname.ResourceName] = None,
+    ):
         if parsed is None:
             parsed = rname.parse_resource_name(resource_name)
         self.parsed = parsed
@@ -76,16 +96,15 @@ class Session(object):
         }
         self.after_parsing()
 
-        #: devices.Device
-        self.device = None
-
-    def after_parsing(self):
+    def after_parsing(self) -> None:
         """Override in derived class to be executed after the resource name has
         been parsed and the attr dictionary has been filled.
         """
         pass
 
-    def get_attribute(self, attribute):
+    def get_attribute(
+        self, attribute: constants.ResourceAttribute
+    ) -> Tuple[Any, constants.StatusCode]:
         """Get an attribute from the session.
 
         :param attribute:
@@ -113,7 +132,9 @@ class Session(object):
             constants.StatusCode.success,
         )
 
-    def set_attribute(self, attribute, attribute_state):
+    def set_attribute(
+        self, attribute: constants.ResourceAttribute, attribute_state: Any
+    ) -> constants.StatusCode:
         """Get an attribute from the session.
 
         :param attribute_state:

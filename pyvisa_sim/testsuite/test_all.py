@@ -24,10 +24,10 @@ def test_list(resource_manager):
         "USB0::0x1111::0x2222::0x3692::0::INSTR",
         "USB0::0x1111::0x2222::0x4444::0::INSTR",
         "USB0::0x1111::0x2222::0x4445::0::RAW",
-        "GPIB0::4::0::INSTR",
-        "GPIB0::8::0::INSTR",
-        "GPIB0::9::0::INSTR",
-        "GPIB0::10::0::INSTR",
+        "GPIB0::4::INSTR",
+        "GPIB0::8::INSTR",
+        "GPIB0::9::INSTR",
+        "GPIB0::10::INSTR",
     }
 
 
@@ -35,7 +35,7 @@ def test_list(resource_manager):
     "resource",
     [
         "ASRL1::INSTR",
-        "GPIB0::8::0::INSTR",
+        "GPIB0::8::INSTR",
         "TCPIP0::localhost::inst0::INSTR",
         "TCPIP0::localhost::10001::SOCKET",
         "USB0::0x1111::0x2222::0x1234::0::INSTR",

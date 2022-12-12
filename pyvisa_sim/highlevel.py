@@ -5,17 +5,21 @@
 :license: MIT, see LICENSE for more details.
 
 """
-
 import random
 from collections import OrderedDict
 from traceback import format_exc
+from typing import Any, Dict, Tuple, SupportsInt, overload, Union
 
 import pyvisa.errors as errors
 from pyvisa import constants, highlevel, rname
 from pyvisa.util import LibraryPath
+from pyvisa.typing import VISARMSession, VISASession, VISAEventContext
+
+from .sessions.session import Session
 
 # This import is required to register subclasses
-from . import gpib, parser, serial, sessions, tcpip, usb  # noqa
+from . import parser
+from .sessions import gpib, serial, tcpip, usb  # noqa
 
 
 class SimVisaLibrary(highlevel.VisaLibraryBase):
@@ -25,7 +29,7 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
 
     When a new resource object is requested to pyvisa, the library creates a Session object
     (that knows how to perform low-level communication operations) associated with a session handle
-    (a number, usually refered just as session).
+    (a number, usually referred just as session).
 
     A call to a library function is handled by PyVisaLibrary if it involves a resource agnostic
     function or dispatched to the correct session object (obtained from the session id).
@@ -34,12 +38,12 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
     """
 
     @staticmethod
-    def get_library_paths():
+    def get_library_paths() -> Tuple[LibraryPath]:
         """List a dummy library path to allow to create the library."""
         return (LibraryPath("unset"),)
 
     @staticmethod
-    def get_debug_info():
+    def get_debug_info() -> Dict[str, str]:
         """Return a list of lines with backend info."""
         from . import __version__
         from .parser import SPEC_VERSION
@@ -50,11 +54,11 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
 
         return d
 
-    def _init(self):
+    def _init(self) -> None:
 
         #: map session handle to session object.
         #: dict[int, SessionSim]
-        self.sessions = {}
+        self.sessions: Dict[int, Session] = {}
 
         try:
             if self.library_path == "unset":
@@ -64,6 +68,14 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         except Exception as e:
             msg = "Could not parse definitions file. %r"
             raise type(e)(msg % format_exc())
+
+    @overload
+    def _register(self, obj: "SimVisaLibrary") -> VISARMSession:
+        ...
+
+    @overload
+    def _register(self, obj: Session) -> VISASession:
+        ...
 
     def _register(self, obj):
         """Creates a random but unique session handle for a session object,
@@ -81,14 +93,13 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         self.sessions[session] = obj
         return session
 
-    # noinspection PyShadowingBuiltins
     def open(
         self,
-        session,
-        resource_name,
-        access_mode=constants.AccessModes.no_lock,
-        open_timeout=constants.VI_TMO_IMMEDIATE,
-    ):
+        session: VISARMSession,
+        resource_name: str,
+        access_mode: constants.AccessModes = constants.AccessModes.no_lock,
+        open_timeout: SupportsInt = constants.VI_TMO_IMMEDIATE,
+    ) -> Tuple[VISASession, constants.StatusCode]:
         """Opens a session to the specified resource.
 
         Corresponds to viOpen function of the VISA library.
@@ -115,23 +126,27 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         try:
             parsed = rname.parse_resource_name(resource_name)
         except rname.InvalidResourceName:
-            return 0, constants.StatusCode.error_invalid_resource_name
+            return VISASession(0), constants.StatusCode.error_invalid_resource_name
 
         # Loops through all session types, tries to parse the resource name and if ok, open it.
-        cls = sessions.Session.get_session_class(
+        cls = Session.get_session_class(
             parsed.interface_type_const, parsed.resource_class
         )
 
         sess = cls(session, resource_name, parsed)
 
         try:
-            sess.device = self.devices[sess.attrs[constants.VI_ATTR_RSRC_NAME]]
+            r_name = sess.attrs[constants.VI_ATTR_RSRC_NAME]
+            assert isinstance(r_name, str)
+            sess.device = self.devices[r_name]
         except KeyError:
-            return 0, constants.StatusCode.error_resource_not_found
+            return VISASession(0), constants.StatusCode.error_resource_not_found
 
         return self._register(sess), constants.StatusCode.success
 
-    def close(self, session):
+    def close(
+        self, session: Union[VISASession, VISARMSession, VISAEventContext]
+    ) -> constants.StatusCode:
         """Closes the specified session, event, or find list.
 
         Corresponds to viClose function of the VISA library.
@@ -146,7 +161,9 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         except KeyError:
             return constants.StatusCode.error_invalid_object
 
-    def open_default_resource_manager(self):
+    def open_default_resource_manager(
+        self,
+    ) -> Tuple[VISARMSession, constants.StatusCode]:
         """This function returns a session to the Default Resource Manager resource.
 
         Corresponds to viOpenDefaultRM function of the VISA library.
@@ -156,7 +173,9 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         """
         return self._register(self), constants.StatusCode.success
 
-    def list_resources(self, session, query="?*::INSTR"):
+    def list_resources(
+        self, session: VISARMSession, query: str = "?*::INSTR"
+    ) -> Tuple[str, ...]:
         """Returns a tuple of all connected devices matching query.
 
         :param session:
@@ -174,7 +193,9 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
 
         raise errors.VisaIOError(errors.StatusCode.error_resource_not_found.value)
 
-    def read(self, session, count):
+    def read(
+        self, session: VISASession, count: int
+    ) -> Tuple[bytes, constants.StatusCode]:
         """Reads data from device or interface synchronously.
 
         Corresponds to viRead function of the VISA library.
@@ -191,14 +212,17 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
             return b"", constants.StatusCode.error_invalid_object
 
         try:
-            chunk, status = sess.read(count)
+            # We have an explicit except AttributeError
+            chunk, status = sess.read(count)  # type: ignore
             if status == constants.StatusCode.error_timeout:
                 raise errors.VisaIOError(constants.VI_ERROR_TMO)
             return chunk, status
         except AttributeError:
             return b"", constants.StatusCode.error_nonsupported_operation
 
-    def write(self, session, data):
+    def write(
+        self, session: VISASession, data: bytes
+    ) -> Tuple[int, constants.StatusCode]:
         """Writes data to device or interface synchronously.
 
         Corresponds to viWrite function of the VISA library.
@@ -216,11 +240,16 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
             return 0, constants.StatusCode.error_invalid_object
 
         try:
-            return sess.write(data)
+            # We have an explicit except AttributeError
+            return sess.write(data)  # type: ignore
         except AttributeError:
             return 0, constants.StatusCode.error_nonsupported_operation
 
-    def get_attribute(self, session, attribute):
+    def get_attribute(
+        self,
+        session: Union[VISASession, VISARMSession, VISAEventContext],
+        attribute: Union[constants.ResourceAttribute, constants.EventAttribute],
+    ) -> Tuple[Any, constants.StatusCode]:
         """Retrieves the state of an attribute.
 
         Corresponds to viGetAttribute function of the VISA library.
@@ -235,9 +264,16 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         except KeyError:
             return 0, constants.StatusCode.error_invalid_object
 
-        return sess.get_attribute(attribute)
+        # Not sure how to handle events yet and I do not want to error if people keep
+        # using the bare attribute values.
+        return sess.get_attribute(attribute)  # type: ignore
 
-    def set_attribute(self, session, attribute, attribute_state):
+    def set_attribute(
+        self,
+        session: Union[VISASession, VISARMSession, VISAEventContext],
+        attribute: Union[constants.ResourceAttribute, constants.EventAttribute],
+        attribute_state: Any,
+    ) -> constants.StatusCode:
         """Sets the state of an attribute.
 
         Corresponds to viSetAttribute function of the VISA library.
@@ -254,7 +290,9 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         except KeyError:
             return constants.StatusCode.error_invalid_object
 
-        return sess.set_attribute(attribute, attribute_state)
+        # Not sure how to handle events yet and I do not want to error if people keep
+        # using the bare attribute values.
+        return sess.set_attribute(attribute, attribute_state)  # type: ignore
 
     def disable_event(self, session, event_type, mechanism):
         # TODO: implement this for GPIB finalization

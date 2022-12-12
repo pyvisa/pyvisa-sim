@@ -6,19 +6,32 @@
 
 """
 import os
+import pathlib
 from contextlib import closing
 from io import StringIO, open
 from traceback import format_exc
+from typing import (
+    Any,
+    BinaryIO,
+    Dict,
+    Generic,
+    Literal,
+    Mapping,
+    TextIO,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import pkg_resources  # XXX use importlib.resources instead
 import yaml
 
 from .channels import Channels
-from .component import NoResponse
+from .component import Component, NoResponse, Responses
 from .devices import Device, Devices
 
 
-def _ver_to_tuple(ver):
+def _ver_to_tuple(ver: str) -> Tuple[int, ...]:
     return tuple(map(int, (ver.split("."))))
 
 
@@ -28,13 +41,18 @@ SPEC_VERSION = "1.1"
 SPEC_VERSION_TUPLE = _ver_to_tuple(SPEC_VERSION)
 
 
-class SimpleChainmap(object):
+# FIXME does not allow to alter an inherited dialogue, property, etc
+K = TypeVar("K")
+V = TypeVar("V")
+
+
+class SimpleChainmap(Generic[K, V]):
     """Combine multiple mappings for sequential lookup."""
 
-    def __init__(self, *maps):
+    def __init__(self, *maps: Mapping[K, V]) -> None:
         self._maps = maps
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: K) -> V:
         for mapping in self._maps:
             try:
                 return mapping[key]
@@ -43,15 +61,7 @@ class SimpleChainmap(object):
         raise KeyError(key)
 
 
-def _s(s):
-    """Strip white spaces"""
-    if s is NoResponse:
-        return s
-
-    return s.strip(" ")
-
-
-def _get_pair(dd):
+def _get_pair(dd: Dict[str, str]) -> Tuple[str, str]:
     """Return a pair from a dialogue dictionary.
 
     :param dd: Dialogue dictionary.
@@ -59,21 +69,27 @@ def _get_pair(dd):
     :return: (query, response)
     :rtype: (str, str)
     """
-    return _s(dd["q"]), _s(dd.get("r", NoResponse))
+    return dd["q"].strip(" "), dd["r"].strip(" ")
 
 
-def _get_triplet(dd):
+def _get_triplet(
+    dd: Dict[str, str]
+) -> Tuple[str, Union[str, Literal[Responses.NO]], Union[str, Literal[Responses.NO]]]:
     """Return a triplet from a dialogue dictionary.
 
     :param dd: Dialogue dictionary.
     :type dd: Dict[str, str]
     :return: (query, response, error response)
-    :rtype: (str, str | NoResponse, str | NoResponse)
+    :rtype: (str, str | None, str | None)
     """
-    return _s(dd["q"]), _s(dd.get("r", NoResponse)), _s(dd.get("e", NoResponse))
+    return (
+        dd["q"].strip(" "),
+        dd["r"].strip(" ") if "r" in dd else NoResponse,
+        dd["e"].strip(" ") if "e" in dd else NoResponse,
+    )
 
 
-def _load(content_or_fp):
+def _load(content_or_fp: Union[str, bytes, TextIO, BinaryIO]) -> Dict[str, Any]:
     """YAML Parse a file or str and check version."""
     try:
         data = yaml.load(content_or_fp, Loader=yaml.loader.BaseLoader)
@@ -103,7 +119,7 @@ def _load(content_or_fp):
     return data
 
 
-def parse_resource(name):
+def parse_resource(name: str) -> Dict[str, Any]:
     """Parse a resource file"""
     with closing(pkg_resources.resource_stream(__name__, name)) as fp:
         rbytes = fp.read()
@@ -111,14 +127,15 @@ def parse_resource(name):
     return _load(StringIO(rbytes.decode("utf-8")))
 
 
-def parse_file(fullpath):
+def parse_file(fullpath: Union[str, pathlib.Path]) -> Dict[str, Any]:
     """Parse a file"""
-
     with open(fullpath, encoding="utf-8") as fp:
         return _load(fp)
 
 
-def update_component(name, comp, component_dict):
+def update_component(
+    name: str, comp: Component, component_dict: Dict[str, Any]
+) -> None:
     """Get a component from a component dict."""
     for dia in component_dict.get("dialogues", ()):
         try:
@@ -145,12 +162,14 @@ def update_component(name, comp, component_dict):
             raise type(e)(msg % (name, prop_name, format_exc()))
 
 
-def get_bases(definition_dict, loader):
+def get_bases(definition_dict: Dict[str, Any], loader: "Loader") -> Dict[str, Any]:
     """Collect dependencies."""
     bases = definition_dict.get("bases", ())
     if bases:
+        # FIXME this currently does not work
+        raise NotImplementedError
         bases = (
-            loader.get_comp_dict(required_version=SPEC_VERSION_TUPLE[0], **b)
+            loader.get_comp_dict(required_version=SPEC_VERSION_TUPLE[0], **b)  # type: ignore
             for b in bases
         )
         return SimpleChainmap(definition_dict, *bases)
@@ -158,7 +177,13 @@ def get_bases(definition_dict, loader):
         return definition_dict
 
 
-def get_channel(device, ch_name, channel_dict, loader, resource_dict):
+def get_channel(
+    device: Device,
+    ch_name: str,
+    channel_dict: Dict[str, Any],
+    loader: "Loader",
+    resource_dict: Dict[str, Any],
+) -> Channels:
     """Get a channels from a channels dictionary.
 
     :param device:
@@ -168,7 +193,7 @@ def get_channel(device, ch_name, channel_dict, loader, resource_dict):
     :param resource_dict:
     :rtype: Device
     """
-    channel_dict = get_bases(channel_dict, loader)
+    cd = get_bases(channel_dict, loader)
 
     r_ids = resource_dict.get("channel_ids", {}).get(ch_name, [])
     ids = r_ids if r_ids else channel_dict.get("ids", {})
@@ -176,12 +201,17 @@ def get_channel(device, ch_name, channel_dict, loader, resource_dict):
     can_select = False if channel_dict.get("can_select") == "False" else True
     channels = Channels(device, ids, can_select)
 
-    update_component(ch_name, channels, channel_dict)
+    update_component(ch_name, channels, cd)
 
     return channels
 
 
-def get_device(name, device_dict, loader, resource_dict):
+def get_device(
+    name: str,
+    device_dict: Dict[str, Any],
+    loader: "Loader",
+    resource_dict: Dict[str, str],
+) -> Device:
     """Get a device from a device dictionary.
 
     :param loader:
@@ -210,12 +240,14 @@ def get_device(name, device_dict, loader, resource_dict):
     return device
 
 
-class Loader(object):
-    def __init__(self, filename, bundled):
+class Loader:
+    def __init__(self, filename: Union[str, pathlib.Path], bundled: bool):
 
         # (absolute path / resource name / None, bundled) -> dict
         # :type: dict[str | None, bool, dict]
-        self._cache = {}
+        self._cache: Dict[
+            Tuple[Union[str, pathlib.Path, None], bool], Dict[str, str]
+        ] = {}
 
         self.data = self._load(filename, bundled, SPEC_VERSION_TUPLE[0])
 
@@ -223,7 +255,13 @@ class Loader(object):
         self._bundled = bundled
         self._basepath = os.path.dirname(filename)
 
-    def load(self, filename, bundled, parent, required_version):
+    def load(
+        self,
+        filename: Union[str, pathlib.Path],
+        bundled: bool,
+        parent: Union[str, pathlib.Path, None],
+        required_version: int,
+    ):
 
         if self._bundled and not bundled:
             msg = "Only other bundled files can be loaded from bundled files."
@@ -238,12 +276,15 @@ class Loader(object):
 
         return self._load(filename, bundled, required_version)
 
-    def _load(self, filename, bundled, required_version):
+    def _load(
+        self, filename: Union[str, pathlib.Path], bundled: bool, required_version: int
+    ) -> Dict[str, Any]:
 
         if (filename, bundled) in self._cache:
             return self._cache[(filename, bundled)]
 
         if bundled:
+            assert isinstance(filename, str)
             data = parse_resource(filename)
         else:
             data = parse_file(filename)
@@ -259,7 +300,13 @@ class Loader(object):
 
         return data
 
-    def get_device_dict(self, device, filename, bundled, required_version):
+    def get_device_dict(
+        self,
+        device: str,
+        filename: Union[str, pathlib.Path],
+        bundled: bool,
+        required_version: int,
+    ):
 
         if filename is None:
             data = self.data
@@ -269,7 +316,7 @@ class Loader(object):
         return data["devices"][device]
 
 
-def get_devices(filename, bundled):
+def get_devices(filename: Union[str, pathlib.Path], bundled: bool) -> Devices:
     """Get a Devices object from a file.
 
     :param bundled:
