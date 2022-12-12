@@ -76,6 +76,20 @@ def _get_triplet(
         dd["e"].strip(" ") if "e" in dd else NoResponse,
     )
 
+def _get_dialogue(dd):
+    """Return a dialogue from a dialogue dictionary.
+
+    :param dd: Dialogue dictionary.
+    :type dd: Dict[str, str] or Dict[str, str, str]
+    :return: (query, response, sources)
+    :rtype: (str, str, str)
+    """
+    if "sources" in dd.keys():
+        sources = dd["sources"]
+    else:
+        sources = None
+    return _s(dd["q"]), _s(dd.get("r", NoResponse)), sources
+
 
 def _load(content_or_fp: Union[str, bytes, TextIO, BinaryIO]) -> Dict[str, Any]:
     """YAML Parse a file or str and check version."""
@@ -127,7 +141,7 @@ def update_component(
     """Get a component from a component dict."""
     for dia in component_dict.get("dialogues", ()):
         try:
-            comp.add_dialogue(*_get_pair(dia))
+            comp.add_dialogue(*_get_dialogue(dia))
         except Exception as e:
             msg = "In device %s, malformed dialogue %s\n%r"
             raise Exception(msg % (name, dia, e))
@@ -148,18 +162,6 @@ def update_component(
         except Exception as e:
             msg = "In device %s, malformed property %s\n%r"
             raise type(e)(msg % (name, prop_name, format_exc()))
-
-    for conn_name, conn_dict in component_dict.get("connections", {}).items():
-        try:
-            comp.add_connection(
-                conn_name,
-                conn_dict["q"],
-                conn_dict["source_list"],
-                conn_dict["function"],
-            )
-        except Exception as e:
-            msg = "In device %s, malformed connection %s\n%r"
-            raise type(e)(msg % (name, conn_name, format_exc()))
 
     try:
         comp.set_devices(devices)

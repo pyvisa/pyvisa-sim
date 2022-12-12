@@ -179,21 +179,6 @@ class Property(Generic[T]):
             )
         return value
 
-    # --- Private API
-    
-class Connection(object):
-    """A device connection"""
-
-    def __init__(self, q, source_list, function):
-        """
-        :param q: query to use
-        :param source_list: list of sources to connect with
-        :param function: function to apply
-        """
-
-        self.q = q
-        self.source_list = source_list
-        self.function = function
 
     #: Current value of the property.
     _value: Optional[T]
@@ -208,19 +193,23 @@ class Component:
         self._getters = {}
         self._setters = []
         self.devices = []
+        self._devices = {}
 
-    def add_dialogue(self, query: str, response: str) -> None:
+    def add_dialogue(self, query, response, sources = None):
         """Add dialogue to device.
 
-        Parameters
-        ----------
-        query : str
-            Query to which the dialog answers to.
-        response : str
-            Response to the dialog query.
-
+        :param query: query string
+        :param response: response string
+        :param sources: connected sources
         """
-        self._dialogues[to_bytes(query)] = to_bytes(response)
+        if sources:
+            dialogue = {
+                "func": response,
+                "sources": (sources)
+            }
+            self._dialogues[to_bytes(query)] = dialogue
+
+        else: self._dialogues[to_bytes(query)] = to_bytes(response)
 
     def add_property(
         self,
@@ -303,7 +292,33 @@ class Component:
 
         # Try to match in the queries
         if query in dialogues:
-            response = dialogues[query]
+            # if connection
+            if type(dialogues[query]) == dict:
+                dialogue = dialogues[query]
+                function = dialogue["func"]
+                sources = dialogue["sources"]
+                prop_dict = {}
+
+                for source in sources:
+                    # Find source for connection
+                    for device in self.devices._internal:
+                        if device == source["source_name"]:
+                            # Find correct property
+                            for property in self.devices._internal[device]._properties:
+                                if property == source["source_parameter"]:
+                                    # Add property and value to prop_dict
+                                    value = self.devices._internal[device]._properties[property]._value
+                                    prop_dict[property] = value
+                                    break
+                            break
+                
+                # Populate and run function
+                func = function.format(**prop_dict)
+                response = to_bytes(str(eval(func)))
+
+            else:   
+                response = dialogues[query]
+            
             logger.debug("Found response in queries: %s" % repr(response))
 
             return response
@@ -371,41 +386,3 @@ class Component:
                     return error_response
 
         return None
-    
-    def _match_connection(self, query, connections=None):
-        """Tries to match in connections
-
-        :param query: message tuple
-        :type query: Tuple[bytes]
-        :return: response if found or None
-        :rtype: Tuple[bytes] | None
-        """
-        
-        if connections is None:
-            connections = self._connections
-
-        # Check every connection for query match
-        for connection in connections.values():
-            if (connection.q).encode("utf-8") == query:
-
-                prop_dict = {}
-
-                for source in connection.source_list:
-                    # Find source for connection
-
-                    for device in self.devices._internal:
-                        if device == source["source_name"]:
-                            # Find correct property
-                            for property in self.devices._internal[device]._properties:
-                                if property == source["source_parameter"]:
-                                    # Add property and value to prop_dict
-                                    value = self.devices._internal[device]._properties[property]._value
-                                    prop_dict[property] = value
-                                    break
-                            break
-                
-                # Populate and run function
-                func = connection.function.format(**prop_dict)
-                response = str(eval(func))
-                logger.debug("Found response in queries: %s" % response)
-                return response.encode("utf-8")

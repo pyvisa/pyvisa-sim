@@ -266,8 +266,12 @@ devices:
         r: "NO ERROR"
       - q: "SOUR1:POW?"
         r: "2"
-      - q: "RUN:FUNCTION"
-        r: "hello {:}"
+      - q: "READ1"
+        r: "0.23 * ({amplitude} ** 2) - {frequency}"
+        sources: [
+          {source_name: "GPIB0::2::65535::INSTR", source_parameter: amplitude},
+          {source_name: "GPIB0::22::65535::INSTR", source_parameter: frequency}
+        ]
     properties:
       frequency:
         default: 1.0
@@ -318,14 +322,6 @@ devices:
         specs:
           valid: ['0', '1', 'ON', 'OFF']
           type: str
-    connections:
-      power:
-        q: "READ1"
-        source_list: [
-          {source_name: "GPIB0::2::65535::INSTR", source_parameter: amplitude},
-          {source_name: "GPIB0::22::65535::INSTR", source_parameter: frequency}
-        ]
-        function: "0.23 * ({amplitude} ** 2) - {frequency}"
   device 6:
     eom:
       ASRL INSTR:
