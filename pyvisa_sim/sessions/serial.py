@@ -6,30 +6,38 @@
 
 """
 import time
+from typing import Tuple
 
-from pyvisa import constants
+from pyvisa import constants, rname
 
-from . import common, sessions
+from . import session
+
+from .. import common
 
 
-@sessions.Session.register(constants.InterfaceType.asrl, "INSTR")
-class SerialInstrumentSession(sessions.Session):
-    def after_parsing(self):
-        self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed.board)
+@session.Session.register(constants.InterfaceType.asrl, "INSTR")
+class SerialInstrumentSession(session.Session):
 
-    def read(self, count):
+    parsed: rname.ASRLInstr
+
+    def after_parsing(self) -> None:
+        self.attrs[constants.ResourceAttribute.interface_number] = int(
+            self.parsed.board
+        )
+
+    def read(self, count: int) -> Tuple[bytes, constants.StatusCode]:
 
         # TODO: Implement VI_ATTR_SUPPRESS_END_EN
-        end_in, _ = self.get_attribute(constants.VI_ATTR_ASRL_END_IN)
+        end_in, _ = self.get_attribute(constants.ResourceAttribute.asrl_end_in)
 
-        end_char, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR)
+        end_char, _ = self.get_attribute(constants.ResourceAttribute.termchar)
         end_char = common.int_to_byte(end_char)
 
-        enabled, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR_EN)
-        timeout, _ = self.get_attribute(constants.VI_ATTR_TMO_VALUE)
+        enabled, _ = self.get_attribute(constants.ResourceAttribute.termchar_enabled)
+        timeout, _ = self.get_attribute(constants.ResourceAttribute.timeout_value)
         timeout /= 1000
 
-        last_bit, _ = self.get_attribute(constants.VI_ATTR_ASRL_DATA_BITS)
+        last_bit, _ = self.get_attribute(constants.ResourceAttribute.asrl_data_bits)
         mask = 1 << (last_bit - 1)
         start = time.time()
 
@@ -68,17 +76,17 @@ class SerialInstrumentSession(sessions.Session):
         else:
             return out, constants.StatusCode.error_timeout
 
-    def write(self, data):
-        send_end, _ = self.get_attribute(constants.VI_ATTR_SEND_END_EN)
-        asrl_end, _ = self.get_attribute(constants.VI_ATTR_ASRL_END_OUT)
+    def write(self, data: bytes) -> Tuple[int, constants.StatusCode]:
+        send_end, _ = self.get_attribute(constants.ResourceAttribute.send_end_enabled)
+        asrl_end, _ = self.get_attribute(constants.ResourceAttribute.asrl_end_out)
 
-        end_char, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR)
+        end_char, _ = self.get_attribute(constants.ResourceAttribute.termchar)
         end_char = common.int_to_byte(end_char)
 
         len_transferred = len(data)
 
         if asrl_end == constants.SerialTermination.last_bit:
-            last_bit, _ = self.get_attribute(constants.VI_ATTR_ASRL_DATA_BITS)
+            last_bit, _ = self.get_attribute(constants.ResourceAttribute.asrl_data_bits)
             mask = 1 << (last_bit - 1)
             for val in common.iter_bytes(data, mask, send_end):
                 self.device.write(val)

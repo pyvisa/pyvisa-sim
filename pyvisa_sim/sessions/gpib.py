@@ -5,16 +5,20 @@
 :license: MIT, see LICENSE for more details.
 
 """
+from typing import Tuple
 import time
 
-from pyvisa import constants
+from pyvisa import constants, rname
 
-from . import sessions
+from . import session
 
 
-@sessions.Session.register(constants.InterfaceType.gpib, "INSTR")
-class GPIBInstrumentSession(sessions.Session):
-    def after_parsing(self):
+@session.Session.register(constants.InterfaceType.gpib, "INSTR")
+class GPIBInstrumentSession(session.Session):
+
+    parsed: rname.GPIBInstr
+
+    def after_parsing(self) -> None:
         self.attrs[constants.VI_ATTR_INTF_NUM] = int(self.parsed.board)
         self.attrs[constants.VI_ATTR_GPIB_PRIMARY_ADDR] = int(
             self.parsed.primary_address
@@ -25,10 +29,10 @@ class GPIBInstrumentSession(sessions.Session):
             else constants.VI_NO_SEC_ADDR
         )
 
-    def read(self, count):
-        end_char, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR)
-        enabled, _ = self.get_attribute(constants.VI_ATTR_TERMCHAR_EN)
-        timeout, _ = self.get_attribute(constants.VI_ATTR_TMO_VALUE)
+    def read(self, count: int) -> Tuple[bytes, constants.StatusCode]:
+        end_char, _ = self.get_attribute(constants.ResourceAttribute.termchar)
+        enabled, _ = self.get_attribute(constants.ResourceAttribute.termchar_enabled)
+        timeout, _ = self.get_attribute(constants.ResourceAttribute.timeout_value)
         timeout /= 1000
 
         start = time.time()
@@ -53,8 +57,8 @@ class GPIBInstrumentSession(sessions.Session):
         else:
             return out, constants.StatusCode.error_timeout
 
-    def write(self, data):
-        send_end = self.get_attribute(constants.VI_ATTR_SEND_END_EN)
+    def write(self, data: bytes) -> Tuple[int, constants.StatusCode]:
+        send_end = self.get_attribute(constants.ResourceAttribute.send_end_enabled)
 
         for i in range(len(data)):
             self.device.write(data[i : i + 1])

@@ -41,6 +41,7 @@ dependencies = [
     "pyvisa>=1.11.0",
     "PyYAML",
     "stringparser",
+    "typing-extensions",
 ]
 dynamic=["version"]
 
@@ -91,9 +92,9 @@ strict_optional = true
 
 [[tool.mypy.overrides]]
 module = [
-    "pyvisa.thirdparty.*",
+    "stringparser",
 ]
-ignore_errors = true
+ignore_missing_imports = true
 
 [tool.isort]
 profile = "black"
