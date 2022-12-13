@@ -7,7 +7,6 @@
 """
 import enum
 from typing import (
-    Any,
     Dict,
     Final,
     Generic,
@@ -51,7 +50,7 @@ def to_bytes(val: Literal[Responses.NO]) -> Literal[Responses.NO]:
 
 
 def to_bytes(val):
-    """Takes a text message and return a tuple"""
+    """Takes a text message or NoResponse and encode it."""
     if val is NoResponse:
         return val
 
@@ -63,6 +62,15 @@ T = TypeVar("T", bound=Union[int, float, str])
 
 
 class Specs(Generic[T]):
+    """Specification to validate a property value.
+
+    Parameters
+    ----------
+    specs : DIct[str, str]
+        Specs as a dictionary as extracted from the yaml config.
+
+    """
+
     #: Value that lead to some validation are int, float, str
     type: Optional[Type[T]]
 
@@ -104,24 +112,32 @@ class Specs(Generic[T]):
 
 
 class Property(Generic[T]):
-    """A device property"""
+    """A device property
+
+    Parameters
+    ----------
+    name : str
+        Name of the property
+    value : str
+        Default value as a string
+    specs : Dict[str, str]
+        Specification used to validate the property value.
+
+    """
+
+    #: Name of the property
+    name: str
 
     #: Specification used to validate
     specs: Optional[Specs[T]]
 
-    def __init__(self, name: str, value: Any, specs: dict[str, str]):
-        """
-        :param name: name of the property
-        :param value: default value
-        :param specs: specification dictionary
-        :return:
-        """
+    def __init__(self, name: str, value: str, specs: Dict[str, str]):
         self.name = name
         try:
             self.specs = Specs[T](specs) if specs else None
         except ValueError as e:
             raise ValueError(f"Failed to create Specs for property {name}") from e
-        self._value: Optional[T] = None
+        self._value = None
         self.init_value(value)
 
     def init_value(self, string_value: str) -> None:
@@ -163,34 +179,31 @@ class Property(Generic[T]):
             )
         return value
 
+    # --- Private API
+
+    #: Current value of the property.
+    _value: Optional[T]
+
 
 class Component:
     """A component of a device."""
 
     def __init__(self) -> None:
-
-        #: Stores the queries accepted by the device.
-        #: query: response
-        self._dialogues: Dict[bytes, bytes] = {}
-
-        #: Maps property names to value, type, validator
-        self._properties: Dict[str, Property] = {}
-
-        #: Stores the getter queries accepted by the device.
-        #: query: (property_name, response)
-        self._getters: Dict[bytes, Tuple[str, str]] = {}
-
-        #: Stores the setters queries accepted by the device.
-        #: (property_name, string parser query, response, error response)
-        self._setters: List[
-            Tuple[str, stringparser.Parser, OptionalBytes, OptionalBytes]
-        ] = []
+        self._dialogues = {}
+        self._properties = {}
+        self._getters = {}
+        self._setters = []
 
     def add_dialogue(self, query: str, response: str) -> None:
         """Add dialogue to device.
 
-        :param query: query string
-        :param response: response string
+        Parameters
+        ----------
+        query : str
+            Query to which the dialog answers to.
+        response : str
+            Response to the dialog query.
+
         """
         self._dialogues[to_bytes(query)] = to_bytes(response)
 
@@ -204,11 +217,20 @@ class Component:
     ):
         """Add property to device
 
-        :param name: property name
-        :param default_value: default value as string
-        :param getter_pair: (query, response)
-        :param setter_triplet: (query, response, error)
-        :param specs: specification of the Property
+        Parameters
+        ----------
+        property_name : str
+            Name of the property.
+        default_value : str
+            Default value of the property as a str.
+        getter_pair : Optional[Tuple[str, str]]
+            Parameters for accessing the property value (query and response str)
+        setter_triplet : Optional[Tuple[str, OptionalStr, OptionalStr]]
+            Parameters for setting the property value. The response and error
+            are optional.
+        specs : Dict[str, str]
+            Specification for the property as a dict.
+
         """
         self._properties[name] = Property(name, default_value, specs)
 
@@ -226,15 +248,40 @@ class Component:
         """Try to find a match for a query in the instrument commands."""
         raise NotImplementedError()
 
+    # --- Private API
+
+    #: Stores the queries accepted by the device.
+    #: query: response
+    _dialogues: Dict[bytes, bytes]
+
+    #: Maps property names to value, type, validator
+    _properties: Dict[str, Property]
+
+    #: Stores the getter queries accepted by the device.
+    #: query: (property_name, response)
+    _getters: Dict[bytes, Tuple[str, str]]
+
+    #: Stores the setters queries accepted by the device.
+    #: (property_name, string parser query, response, error response)
+    _setters: List[Tuple[str, stringparser.Parser, OptionalBytes, OptionalBytes]]
+
     def _match_dialog(
         self, query: bytes, dialogues: Optional[Dict[bytes, bytes]] = None
     ) -> Optional[bytes]:
         """Tries to match in dialogues
 
-        :param query: message tuple
-        :type query: Tuple[bytes]
-        :return: response if found or None
-        :rtype: Tuple[bytes] | None
+        Parameters
+        ----------
+        query : bytes
+            Query that we try to match to.
+        dialogues : Optional[Dict[bytes, bytes]], optional
+            Alternative dialogs to use when matching.
+
+        Returns
+        -------
+        Optional[bytes]
+            Response if a dialog matched.
+
         """
         if dialogues is None:
             dialogues = self._dialogues
@@ -255,10 +302,18 @@ class Component:
     ) -> Optional[bytes]:
         """Tries to match in getters
 
-        :param query: message tuple
-        :type query: Tuple[bytes]
-        :return: response if found or None
-        :rtype: Tuple[bytes] | None
+        Parameters
+        ----------
+        query : bytes
+            Query that we try to match to.
+        dialogues : Optional[Dict[bytes, bytes]], optional
+            Alternative getters to use when matching.
+
+        Returns
+        -------
+        Optional[bytes]
+            Response if a dialog matched.
+
         """
         if getters is None:
             getters = self._getters
@@ -274,10 +329,16 @@ class Component:
     def _match_setters(self, query: bytes) -> Optional[OptionalBytes]:
         """Tries to match in setters
 
-        :param query: message tuple
-        :type query: Tuple[bytes]
-        :return: response if found or None
-        :rtype: Tuple[bytes] | None
+        Parameters
+        ----------
+        query : bytes
+            Query that we try to match to.
+
+        Returns
+        -------
+        Optional[bytes]
+            Response if a dialog matched.
+
         """
         q = query.decode("utf-8")
         for name, parser, response, error_response in self._setters:

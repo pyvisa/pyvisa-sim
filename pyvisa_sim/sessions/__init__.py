@@ -4,4 +4,3 @@
 :license: MIT, see LICENSE for more details.
 
 """
-# XXX include constants.EventAttribute in signature of get/set attribute

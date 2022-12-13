@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 
 """
+import importlib.resources
 import os
 import pathlib
 from contextlib import closing
@@ -23,7 +24,6 @@ from typing import (
     Union,
 )
 
-import importlib.resources
 import yaml
 
 from .channels import Channels
@@ -62,26 +62,14 @@ class SimpleChainmap(Generic[K, V]):
 
 
 def _get_pair(dd: Dict[str, str]) -> Tuple[str, str]:
-    """Return a pair from a dialogue dictionary.
-
-    :param dd: Dialogue dictionary.
-    :type dd: Dict[str, str]
-    :return: (query, response)
-    :rtype: (str, str)
-    """
+    """Return a pair from a dialogue dictionary."""
     return dd["q"].strip(" "), dd["r"].strip(" ")
 
 
 def _get_triplet(
     dd: Dict[str, str]
 ) -> Tuple[str, Union[str, Literal[Responses.NO]], Union[str, Literal[Responses.NO]]]:
-    """Return a triplet from a dialogue dictionary.
-
-    :param dd: Dialogue dictionary.
-    :type dd: Dict[str, str]
-    :return: (query, response, error response)
-    :rtype: (str, str | None, str | None)
-    """
+    """Return a triplet from a dialogue dictionary."""
     return (
         dd["q"].strip(" "),
         dd["r"].strip(" ") if "r" in dd else NoResponse,
@@ -120,7 +108,7 @@ def _load(content_or_fp: Union[str, bytes, TextIO, BinaryIO]) -> Dict[str, Any]:
 
 
 def parse_resource(name: str) -> Dict[str, Any]:
-    """Parse a resource file"""
+    """Parse a resource file."""
     with closing(importlib.resources.open_binary("pyvisa_sim", name)) as fp:
         rbytes = fp.read()
 
@@ -128,7 +116,7 @@ def parse_resource(name: str) -> Dict[str, Any]:
 
 
 def parse_file(fullpath: Union[str, pathlib.Path]) -> Dict[str, Any]:
-    """Parse a file"""
+    """Parse a file."""
     with open(fullpath, encoding="utf-8") as fp:
         return _load(fp)
 
@@ -163,7 +151,7 @@ def update_component(
 
 
 def get_bases(definition_dict: Dict[str, Any], loader: "Loader") -> Dict[str, Any]:
-    """Collect dependencies."""
+    """Collect inherited behaviors."""
     bases = definition_dict.get("bases", ())
     if bases:
         # FIXME this currently does not work
@@ -186,12 +174,24 @@ def get_channel(
 ) -> Channels:
     """Get a channels from a channels dictionary.
 
-    :param device:
-    :param ch_name:
-    :param channel_dict:
-    :param loader:
-    :param resource_dict:
-    :rtype: Device
+    Parameters
+    ----------
+    device : Device
+        Device from which to retrieve a channel
+    ch_name : str
+        Name of the channel to access
+    channel_dict : Dict[str, Any]
+        Definition of the channel.
+    loader : Loader
+        Loader containing all the loaded information.
+    resource_dict : Dict[str, Any]
+        Dictionary describing the resource to which the device is attached.
+
+    Returns
+    -------
+    Channels:
+        Channels for the device.
+
     """
     cd = get_bases(channel_dict, loader)
 
@@ -214,11 +214,22 @@ def get_device(
 ) -> Device:
     """Get a device from a device dictionary.
 
-    :param loader:
-    :param resource_dict:
-    :param name: name of the device
-    :param device_dict: device dictionary
-    :rtype: Device
+    Parameters
+    ----------
+    name : str
+        Name identifying the device.
+    device_dict : Dict[str, Any]
+        Dictionary describing the device.
+    loader : Loader
+        Global loader centralizing all devices information.
+    resource_dict : Dict[str, str]
+        Resource information to which the device is attached.
+
+    Returns
+    -------
+    Device
+        Accessed device
+
     """
     device = Device(name, device_dict.get("delimiter", ";").encode("utf-8"))
 
@@ -241,19 +252,25 @@ def get_device(
 
 
 class Loader:
+    """Loader handling accessing the definitions in YAML files.
+
+    Parameters
+    ----------
+    filename : Union[str, pathlib.Path]
+        Path to the file to be loaded on creation.
+    bundled : bool
+        Is the file bundled with pyvisa-sim itself.
+
+    """
+
+    #: Definitions loaded from a YAML file.
+    data: Dict[str, Any]
+
     def __init__(self, filename: Union[str, pathlib.Path], bundled: bool):
-
-        # (absolute path / resource name / None, bundled) -> dict
-        # :type: dict[str | None, bool, dict]
-        self._cache: Dict[
-            Tuple[Union[str, pathlib.Path, None], bool], Dict[str, str]
-        ] = {}
-
-        self.data = self._load(filename, bundled, SPEC_VERSION_TUPLE[0])
-
+        self._cache = {}
         self._filename = filename
         self._bundled = bundled
-        self._basepath = os.path.dirname(filename)
+        self.data = self._load(filename, bundled, SPEC_VERSION_TUPLE[0])
 
     def load(
         self,
@@ -262,7 +279,21 @@ class Loader:
         parent: Union[str, pathlib.Path, None],
         required_version: int,
     ):
+        """Load a new file into the loader.
 
+        Parameters
+        ----------
+        filename : Union[str, pathlib.Path]
+            Filename of the file to parse or name of the resource.
+        bundled : bool
+            Is the definition file bundled in pyvisa-sim.
+        parent : Union[str, pathlib.Path, None]
+            Path to directory in which the file can be found. If none the directory
+            in which the initial file was located.
+        required_version : int
+            Major required version.
+
+        """
         if self._bundled and not bundled:
             msg = "Only other bundled files can be loaded from bundled files."
             raise ValueError(msg)
@@ -276,10 +307,54 @@ class Loader:
 
         return self._load(filename, bundled, required_version)
 
+    def get_device_dict(
+        self,
+        device: str,
+        filename: Union[str, pathlib.Path, None],
+        bundled: bool,
+        required_version: int,
+    ):
+        """Access a device definition.
+
+        Parameters
+        ----------
+        device : str
+            Name of the device information to access.
+        filename : Union[str, pathlib.Path]
+            Filename of the file to parse or name of the resource.
+            The file must be located in the same directory as the original file.
+        bundled : bool
+            Is the definition file bundled in pyvisa-sim.
+        required_version : int
+            Major required version.
+
+        """
+        if filename is None:
+            data = self.data
+        else:
+            data = self.load(filename, bundled, None, required_version)
+
+        return data["devices"][device]
+
+    # --- Private API
+
+    #: (absolute path / resource name / None, bundled) -> dict
+    _cache: Dict[Tuple[Union[str, pathlib.Path, None], bool], Dict[str, str]]
+
+    #: Path the first loaded file.
+    _filename: Union[str, pathlib.Path]
+
+    #: Is the loader working with bundled resources.
+    _bundled: bool
+
     def _load(
         self, filename: Union[str, pathlib.Path], bundled: bool, required_version: int
     ) -> Dict[str, Any]:
+        """Load a YAML definition file.
 
+        The major version of the definition must match.
+
+        """
         if (filename, bundled) in self._cache:
             return self._cache[(filename, bundled)]
 
@@ -300,40 +375,31 @@ class Loader:
 
         return data
 
-    def get_device_dict(
-        self,
-        device: str,
-        filename: Union[str, pathlib.Path],
-        bundled: bool,
-        required_version: int,
-    ):
-
-        if filename is None:
-            data = self.data
-        else:
-            data = self.load(filename, bundled, None, required_version)
-
-        return data["devices"][device]
-
 
 def get_devices(filename: Union[str, pathlib.Path], bundled: bool) -> Devices:
     """Get a Devices object from a file.
 
-    :param bundled:
-    :param filename: full path of the file to parse or name of the resource.
-    :rtype: Devices
+    Parameters
+    ----------
+    filename : Union[str, pathlib.Path]
+        Full path of the file to parse or name of the resource.
+    bundled : bool
+        Is the definition file bundled in pyvisa-sim.
+
+    Returns
+    -------
+    Devices
+        Devices found in the definition file.
+
     """
 
     loader = Loader(filename, bundled)
-
-    data = loader.data
-
     devices = Devices()
 
     # Iterate through the resources and generate each individual device
     # on demand.
 
-    for resource_name, resource_dict in data.get("resources", {}).items():
+    for resource_name, resource_dict in loader.data.get("resources", {}).items():
         device_name = resource_dict["device"]
 
         dd = loader.get_device_dict(

@@ -11,14 +11,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeVar
 import stringparser
 
 from .common import logger
-from .component import (
-    Component,
-    OptionalBytes,
-    OptionalStr,
-    Property,
-    T,
-    to_bytes,
-)
+from .component import Component, OptionalBytes, OptionalStr, Property, T, to_bytes
 
 if TYPE_CHECKING:
     from .devices import Device
@@ -30,10 +23,7 @@ class ChannelProperty(Property[T]):
     def __init__(
         self, channel: "Channels", name: str, default_value: str, specs: Dict[str, str]
     ) -> None:
-
-        #: Refrence to the channel holding that property.
         self._channel = channel
-
         super(ChannelProperty, self).__init__(name, default_value, specs)
 
     def init_value(self, string_value: str) -> None:
@@ -50,6 +40,12 @@ class ChannelProperty(Property[T]):
         value = self.validate_value(string_value)
         self._value[self._channel._selected] = value
 
+    # --- Private API
+
+    #: Reference to the channel holding that property.
+    _channel: "Channels"
+
+    #: Value of the property on a per channel basis
     _value: Dict[Any, T]  # type: ignore
 
 
@@ -60,10 +56,7 @@ class ChDict(Dict[str, Dict[bytes, V]]):
     """Default dict like creating specialized command sets for a channel."""
 
     def __missing__(self, key: str) -> Dict[bytes, V]:
-        """Create a channel specialized version of the mapping found in
-        __default__.
-
-        """
+        """Create a channel specialized version of the mapping found in __default__."""
         return {
             k.decode("utf-8").format(ch_id=key).encode("utf-8"): v
             for k, v in self["__default__"].items()
@@ -90,8 +83,13 @@ class Channels(Component):
     def add_dialogue(self, query: str, response: str) -> None:
         """Add dialogue to channel.
 
-        :param query: query string
-        :param response: response string
+        Parameters
+        ----------
+        query : str
+            Query string to which this dialogue answers to.
+        response : str
+            Response sent in response to a query.
+
         """
         self._dialogues["__default__"][to_bytes(query)] = to_bytes(response)
 
@@ -105,11 +103,20 @@ class Channels(Component):
     ) -> None:
         """Add property to channel
 
-        :param name: property name
-        :param default_value: default value as string
-        :param getter_pair: (query, response)
-        :param setter_triplet: (query, response, error)
-        :param specs: specification of the Property
+        Parameters
+        ----------
+        property_name : str
+            Name of the property.
+        default_value : str
+            Default value of the property as a str.
+        getter_pair : Optional[Tuple[str, str]]
+            Parameters for accessing the property value (query and response str)
+        setter_triplet : Optional[Tuple[str, OptionalStr, OptionalStr]]
+            Parameters for setting the property value. The response and error
+            are optional.
+        specs : Dict[str, str]
+            Specification for the property as a dict.
+
         """
         self._properties[name] = ChannelProperty(self, name, default_value, specs)
 
