@@ -5,16 +5,26 @@
 :license: MIT, see LICENSE for more details.
 
 """
-from typing import Dict, List, Tuple, Union, Optional
+from typing import Dict, List, Optional, Tuple, Union
 
 from pyvisa import constants, rname
 
 from .channels import Channels
 from .common import logger
-from .component import Component, NoResponse, to_bytes, OptionalBytes
+from .component import Component, NoResponse, OptionalBytes, to_bytes
 
 
 class StatusRegister:
+    """Class used to mimic a register.
+
+    Parameters
+    ----------
+    values : values: Dict[str, int]
+        Mapping between a name and the associated integer value.
+        The name 'q' is reserved and ignored.
+
+    """
+
     def __init__(self, values: Dict[str, int]) -> None:
         self._value = 0
         self._error_map = {}
@@ -36,8 +46,28 @@ class StatusRegister:
     def clear(self) -> None:
         self._value = 0
 
+    # --- Private API
+
+    #: Mapping between name and integer values.
+    _error_map: Dict[str, int]
+
+    #: Current value of the register.
+    _value: int
+
 
 class ErrorQueue:
+    """Store error messages in a FIFO queue.
+
+    Parameters
+    ----------
+    values : values: Dict[str, str]
+        Mapping between a name and the associated detailed error message.
+        The names 'q', 'default' and 'strict' are reserved.
+        'q' and 'strict' are ignored, 'default' is used to set up the default
+        response when the queue is empty.
+
+    """
+
     def __init__(self, values: Dict[str, str]) -> None:
         self._queue: List[bytes] = []
         self._error_map = {}
@@ -61,61 +91,52 @@ class ErrorQueue:
     def clear(self) -> None:
         self._queue = []
 
+    # --- Private API
+
+    #: Queue of recorded errors
+    _queue: List[bytes]
+
+    #: Mapping between short error names and complete error messages
+    _error_map: Dict[str, bytes]
+
+    #: Default response when the queue is empty.
+    _default: bytes
+
 
 class Device(Component):
     """A representation of a responsive device
 
-    :param name: The identification name of the device
-    :type name: str
-    :param name: fullpath of the device where it is defined.
-    :type name: str
+    Parameters
+    ----------
+    name : str
+        The identification name of the device
+    delimiter : bytes
+        Character delimiting multiple message sent in a single query.
+
     """
 
-    # To be bound when adding the Device to Devices
-    _resource_name: Optional[str] = None
+    #: Name of the device.
+    name: str
 
-    # Default end of message used in query operations
-    _query_eom: bytes = b""
-
-    # Default end of message used in response operations
-    _response_eom: bytes = b""
+    #: Special character use to delimit multiple messages.
+    delimiter: bytes
 
     def __init__(self, name: str, delimiter: bytes) -> None:
 
         super(Device, self).__init__()
-
-        #: Name of the device.
         self.name = name
-
-        #: Special character use to delimit multiple messages.
         self.delimiter = delimiter
-
-        #: Mapping between a name and a Channels object
-        self._channels: Dict[str, Channels] = {}
-
-        #: Stores the error response for each query accepted by the device.
-        self._error_response: Dict[str, bytes] = {}
-
-        #: Stores the registers by name.
-        #: Register name -> Register object
-        self._status_registers: Dict[bytes, StatusRegister] = {}
-
-        self._error_map: Dict[str, StatusRegister] = {}
-
-        #: Stores the specific end of messages for device.
-        #: TYPE CLASS -> (query termination, response termination)
-        self._eoms: Dict[Tuple[constants.InterfaceType, str], Tuple[bytes, bytes]] = {}
-
-        #: Buffer in which the user can read
-        #: :type: bytearray
+        self._resource_name = None
+        self._query_eom = b""
+        self._response_eom = b""
+        self._channels = {}
+        self._error_response = {}
+        self._status_registers = {}
+        self._error_map = {}
+        self._eoms = {}
         self._output_buffer = bytearray()
-
-        #: Buffer in which the user can write
-        #: :type: bytearray
         self._input_buffer = bytearray()
-
-        #: Mapping an error queue query and the queue.
-        self._error_queues: Dict[bytes, ErrorQueue] = {}
+        self._error_queues = {}
 
     @property
     def resource_name(self) -> Optional[str]:
@@ -141,7 +162,7 @@ class Device(Component):
         """Add a channel definition."""
         self._channels[ch_name] = ch_obj
 
-    # XXX use a TypedDict
+    # FIXME use a TypedDict
     def add_error_handler(self, error_input: Union[dict, str]):
         """Add error handler to the device"""
 
@@ -175,6 +196,7 @@ class Device(Component):
             self._error_response[key] = to_bytes(value)
 
     def error_response(self, error_key: str) -> Optional[bytes]:
+        """Uupdate all error queues and return an error message if it exists."""
         if error_key in self._error_map:
             self._error_map[error_key].set(error_key)
 
@@ -188,9 +210,15 @@ class Device(Component):
     ) -> None:
         """Add default end of message for a given interface type and resource class.
 
-        :param type_class: interface type and resource class as strings joined by space
-        :param query_termination: end of message used in queries.
-        :param response_termination: end of message used in responses.
+        Parameters
+        ----------
+        type_class : str
+            Interface type and resource class as strings joined by space
+        query_termination : str
+            End of message used in queries.
+        response_termination : str
+            End of message used in responses.
+
         """
         i_t, resource_class = type_class.split(" ")
         interface_type = getattr(constants.InterfaceType, i_t.lower())
@@ -200,11 +228,7 @@ class Device(Component):
         )
 
     def write(self, data: bytes) -> None:
-        """Write data into the device input buffer.
-
-        :param data: single element byte
-        :type data: bytes
-        """
+        """Write data into the device input buffer."""
         logger.debug("Writing into device input buffer: %r" % data)
         if not isinstance(data, bytes):
             raise TypeError("data must be an instance of bytes")
@@ -245,14 +269,45 @@ class Device(Component):
 
         return b""
 
-    def _match(self, query: bytes) -> Optional[OptionalBytes]:
-        """Tries to match in dialogues, getters and setters and subcomponents
+    # --- Private API
 
-        :param query: message tuple
-        :type query: Tuple[bytes]
-        :return: response if found or None
-        :rtype: Tuple[bytes] | None
-        """
+    #: Resource name this device is bound to. Set when adding the device to Devices
+    _resource_name: Optional[str]
+
+    # Default end of message used in query operations
+    _query_eom: bytes
+
+    # Default end of message used in response operations
+    _response_eom: bytes
+
+    #: Mapping between a name and a Channels object
+    _channels: Dict[str, Channels]
+
+    #: Stores the error response for each query accepted by the device.
+    _error_response: Dict[str, bytes]
+
+    #: Stores the registers by name.
+    #: Register name -> Register object
+    _status_registers: Dict[bytes, StatusRegister]
+
+    #: Mapping between error and register affected by the error.
+    _error_map: Dict[str, StatusRegister]
+
+    #: Stores the specific end of messages for device.
+    #: TYPE CLASS -> (query termination, response termination)
+    _eoms: Dict[Tuple[constants.InterfaceType, str], Tuple[bytes, bytes]]
+
+    #: Buffer in which the user can read
+    _output_buffer: bytearray
+
+    #: Buffer in which the user can write
+    _input_buffer: bytearray
+
+    #: Mapping an error queue query and the queue.
+    _error_queues: Dict[bytes, ErrorQueue]
+
+    def _match(self, query: bytes) -> Optional[OptionalBytes]:
+        """Tries to match in dialogues, getters and setters and channels."""
         response: Optional[OptionalBytes]
         response = self._match_dialog(query)
         if response is not None:
@@ -283,13 +338,7 @@ class Device(Component):
         return None
 
     def _match_registers(self, query: bytes) -> Optional[bytes]:
-        """Tries to match in status registers
-
-        :param query: message tuple
-        :type query: Tuple[bytes]
-        :return: response if found or None
-        :rtype: Tuple[bytes] | None
-        """
+        """Tries to match in status registers."""
         if query in self._status_registers:
             register = self._status_registers[query]
             response = register.value
@@ -301,13 +350,7 @@ class Device(Component):
         return None
 
     def _match_errors_queues(self, query: bytes) -> Optional[bytes]:
-        """Tries to match in error queues
-
-        :param query: message tuple
-        :type query: Tuple[bytes]
-        :return: response if found or None
-        :rtype: Tuple[bytes] | None
-        """
+        """Tries to match in error queues."""
         if query in self._error_queues:
             queue = self._error_queues[query]
             response = queue.value
@@ -322,10 +365,7 @@ class Devices:
     """The group of connected devices."""
 
     def __init__(self) -> None:
-
-        #: Devices
-        #: dict[str, Device]
-        self._internal: Dict[str, Device] = {}
+        self._internal = {}
 
     def add_device(self, resource_name: str, device: Device) -> None:
         """Bind device to resource name"""
@@ -347,3 +387,8 @@ class Devices:
         :rtype: tuple[str]
         """
         return tuple(self._internal.keys())
+
+    # --- Private API
+
+    #: Resource name to device map.
+    _internal: Dict[str, Device]

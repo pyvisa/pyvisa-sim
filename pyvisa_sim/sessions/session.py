@@ -5,13 +5,12 @@
 :license: MIT, see LICENSE for more details.
 
 """
-from typing import Any, Dict, Tuple, Type, Optional, Callable, TypeVar
+from typing import Any, Callable, Dict, Optional, Tuple, Type, TypeVar
 
 from pyvisa import attributes, constants, rname, typing
 
-from ..devices import Device
 from ..common import logger
-
+from ..devices import Device
 
 S = TypeVar("S", bound="Session")
 
@@ -21,9 +20,15 @@ class Session:
 
     Just makes sure that common methods are defined and information is stored.
 
-    :param resource_manager_session: The session handle of the parent Resource Manager
-    :param resource_name: The resource name.
-    :param parsed: the parsed resource name (optional).
+    Parameters
+    ----------
+    resource_manager_session : VISARMSession
+        The session handle of the parent Resource Manager
+    resource_name : str
+        The resource name.
+    parsed : rname.ResourceName
+        Parsed resource name (optional).
+
     """
 
     #: Maps (Interface Type, Resource Class) to Python class encapsulating that resource.
@@ -44,9 +49,18 @@ class Session:
     ) -> Type["Session"]:
         """Return the session class for a given interface type and resource class.
 
-        :type interface_type: constants.InterfaceType
-        :type resource_class: str
-        :return: Session
+        Parameters
+        ----------
+        interface_type : constants.InterfaceType
+            Type of the interface for which we need a Session class.
+        resource_class : str
+            Resource class for which we need a Session class.
+
+        Returns
+        -------
+        Type[Session]
+            Registered session class.
+
         """
         try:
             return cls._session_classes[(interface_type, resource_class)]
@@ -61,8 +75,13 @@ class Session:
     ) -> Callable[[Type[S]], Type[S]]:
         """Register a session class for a given interface type and resource class.
 
-        :type interface_type: constants.InterfaceType
-        :type resource_class: str
+        Parameters
+        ----------
+        interface_type : constants.InterfaceType
+            Type of the interface this session should be used for.
+        resource_class : str
+            Resource class for which this session should be used for.
+
         """
 
         def _internal(python_class):
@@ -89,16 +108,19 @@ class Session:
             parsed = rname.parse_resource_name(resource_name)
         self.parsed = parsed
         self.attrs = {
-            constants.VI_ATTR_RM_SESSION: resource_manager_session,
-            constants.VI_ATTR_RSRC_NAME: str(parsed),
-            constants.VI_ATTR_RSRC_CLASS: parsed.resource_class,
-            constants.VI_ATTR_INTF_TYPE: parsed.interface_type_const,
+            constants.ResourceAttribute.resource_manager_session: resource_manager_session,
+            constants.ResourceAttribute.resource_name: str(parsed),
+            constants.ResourceAttribute.resource_class: parsed.resource_class,
+            constants.ResourceAttribute.interface_type: parsed.interface_type_const,
         }
         self.after_parsing()
 
     def after_parsing(self) -> None:
-        """Override in derived class to be executed after the resource name has
-        been parsed and the attr dictionary has been filled.
+        """Override in derived class to customize the session.
+
+        Executed after the resource name has been parsed and the attr dictionary
+        has been filled.
+
         """
         pass
 
@@ -107,9 +129,18 @@ class Session:
     ) -> Tuple[Any, constants.StatusCode]:
         """Get an attribute from the session.
 
-        :param attribute:
-        :return: attribute value, status code
-        :rtype: object, constants.StatusCode
+        Parameters
+        ----------
+        attribute : constants.ResourceAttribute
+            Attribute whose value to retrieve.
+
+        Returns
+        -------
+        object
+            Attribute value.
+        constants.StatusCode
+            Status code of the operation execution.
+
         """
 
         # Check that the attribute exists.
@@ -137,10 +168,18 @@ class Session:
     ) -> constants.StatusCode:
         """Get an attribute from the session.
 
-        :param attribute_state:
-        :param attribute:
-        :return: attribute value, status code
-        :rtype: object, constants.StatusCode
+        Parameters
+        ----------
+        attribute : constants.ResourceAttribute
+            Attribute whose value to alter.
+        attribute_state : object
+            Value to set the attribute to.
+
+        Returns
+        -------
+        constants.StatusCode
+            Status code describing the operation execution.
+
         """
 
         # Check that the attribute exists.
