@@ -1,0 +1,9 @@
+pyvisa
+black
+flake8
+mypy
+types-PyYAML
+isort
+pytest
+sphinx
+sphinx-rtd-theme

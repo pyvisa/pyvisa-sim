@@ -1,44 +1,38 @@
 # -*- coding: utf-8 -*-
+"""Common tools.
+
+This code is currently taken from PyVISA-py.
+Do not edit here.
+
+:copyright: 2014-2022 by PyVISA-sim Authors, see AUTHORS for more details.
+:license: MIT, see LICENSE for more details.
+
 """
-    pyvisa-sim.common
-    ~~~~~~~~~~~~~~~~~
-
-    This code is currently taken from PyVISA-py.
-    Do not edit here.
-
-    :copyright: 2014 by PyVISA-sim Authors, see AUTHORS for more details.
-    :license: MIT, see LICENSE for more details.
-"""
-import sys
-
 import logging
+from typing import Callable, Optional, Sequence
 
 from pyvisa import logger
 
-logger = logging.LoggerAdapter(logger, {"backend": "sim"})
+logger = logging.LoggerAdapter(logger, {"backend": "sim"})  # type: ignore
 
 
-class NamedObject(object):
-    """A class to construct named sentinels."""
+def iter_bytes(data: bytes, mask: Optional[int] = None, send_end: bool = False):
+    if send_end and mask is None:
+        raise ValueError("send_end requires a valid mask.")
 
-    def __init__(self, name):
-        self.name = name
+    if mask is None:
+        for d in data:
+            yield bytes([d])
 
-    def __repr__(self):
-        return "<%s>" % self.name
-
-    __str__ = __repr__
-
-
-def iter_bytes(data, mask, send_end):
-    for d in data[:-1]:
-        yield bytes([d & ~mask])
-
-    if send_end:
-        yield bytes([data[-1] | ~mask])
     else:
-        yield bytes([data[-1] & ~mask])
+        for d in data[:-1]:
+            yield bytes([d & ~mask])
+
+        if send_end:
+            yield bytes([data[-1] | ~mask])
+        else:
+            yield bytes([data[-1] & ~mask])
 
 
-int_to_byte = lambda val: bytes([val])
-last_int = lambda val: val[-1]
+int_to_byte: Callable[[int], bytes] = lambda val: bytes([val])
+last_int: Callable[[Sequence[int]], int] = lambda val: val[-1]
