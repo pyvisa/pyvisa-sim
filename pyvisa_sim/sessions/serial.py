@@ -10,9 +10,8 @@ from typing import Tuple
 
 from pyvisa import constants, rname
 
-from . import session
-
 from .. import common
+from . import session
 
 
 @session.Session.register(constants.InterfaceType.asrl, "INSTR")

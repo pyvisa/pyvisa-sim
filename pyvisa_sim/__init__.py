@@ -9,7 +9,6 @@ from importlib.metadata import PackageNotFoundError, version
 
 from .highlevel import SimVisaLibrary
 
-
 __version__ = "unknown"
 try:
     __version__ = version(__name__)
