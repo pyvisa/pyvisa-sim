@@ -15,4 +15,4 @@ repos:
     rev: v0.991 # Use the sha / tag you want to point at
     hooks:
       - id: mypy
-        additional_dependencies: [types-PyYAML, stringparser]
+        additional_dependencies: [pyvisa, types-PyYAML, stringparser, pytest]
