@@ -179,6 +179,7 @@ class Property(Generic[T]):
             )
         return value
 
+    # --- Private API
 
     #: Current value of the property.
     _value: Optional[T]
@@ -192,15 +193,18 @@ class Component:
         self._properties = {}
         self._getters = {}
         self._setters = []
-        self.devices = []
-        self._devices = {}
+        self.devices = {}
 
-    def add_dialogue(self, query, response, sources = None):
+    def add_dialogue(self, query: str, response: str, sources: dict = None) -> None:
         """Add dialogue to device.
 
-        :param query: query string
-        :param response: response string
-        :param sources: connected sources
+        Parameters
+        ----------
+        query : str
+            Query to which the dialog answers to.
+        response : str
+            Response to the dialog query.
+
         """
         if sources:
             dialogue = {
@@ -248,6 +252,13 @@ class Component:
                 (name, stringparser.Parser(query), to_bytes(response_), to_bytes(error))
             )
 
+    def set_devices(self, devices:dict) -> None:
+        """"Add all initialized devices
+
+        :param devices: storage for devices
+        """
+        self.devices = devices
+    
     def match(self, query: bytes) -> Optional[OptionalBytes]:
         """Try to find a match for a query in the instrument commands."""
         raise NotImplementedError()
@@ -301,16 +312,13 @@ class Component:
 
                 for source in sources:
                     # Find source for connection
-                    for device in self.devices._internal:
-                        if device == source["source_name"]:
-                            # Find correct property
-                            for property in self.devices._internal[device]._properties:
-                                if property == source["source_parameter"]:
-                                    # Add property and value to prop_dict
-                                    value = self.devices._internal[device]._properties[property]._value
-                                    prop_dict[property] = value
-                                    break
-                            break
+                    if source["name"] in self.devices._internal.keys():
+                        device = self.devices._internal[source["name"]]
+                        # Find correct property
+                        property = device._properties[source["parameter"]]
+                        # Add property and value to prop_dict
+                        value = property._value
+                        prop_dict[property.name] = value
                 
                 # Populate and run function
                 func = function.format(**prop_dict)
@@ -318,7 +326,7 @@ class Component:
 
             else:   
                 response = dialogues[query]
-            
+                
             logger.debug("Found response in queries: %s" % repr(response))
 
             return response

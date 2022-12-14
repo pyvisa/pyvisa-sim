@@ -241,6 +241,7 @@ devices:
           min: 1
           max: 6
           type: float
+
   device 5:
     eom:
       ASRL INSTR:
@@ -269,8 +270,8 @@ devices:
       - q: "READ1"
         r: "0.23 * ({amplitude} ** 2) - {frequency}"
         sources: [
-          {source_name: "GPIB0::2::65535::INSTR", source_parameter: amplitude},
-          {source_name: "GPIB0::22::65535::INSTR", source_parameter: frequency}
+          {name: "GPIB0::2::INSTR", parameter: amplitude},
+          {name: "GPIB0::22::INSTR", parameter: frequency}
         ]
     properties:
       frequency:

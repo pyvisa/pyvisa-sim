@@ -60,6 +60,20 @@ class SimpleChainmap(Generic[K, V]):
                 pass
         raise KeyError(key)
 
+def _get_dialogue(dd: Dict[str, str]) -> Tuple[str, str, Dict[str, str]]:
+    """Return a dialogue from a dialogue dictionary.
+
+    :param dd: Dialogue dictionary.
+    :type dd: Dict[str, str] or Dict[str, str, str]
+    :return: (query, response, sources)
+    :rtype: (str, str, str)
+    """
+    if "sources" in dd.keys():
+        sources = dd["sources"]
+    else:
+        sources = None
+
+    return dd["q"].strip(" "), dd["r"].strip(" "), sources
 
 def _get_pair(dd: Dict[str, str]) -> Tuple[str, str]:
     """Return a pair from a dialogue dictionary."""
@@ -75,20 +89,6 @@ def _get_triplet(
         dd["r"].strip(" ") if "r" in dd else NoResponse,
         dd["e"].strip(" ") if "e" in dd else NoResponse,
     )
-
-def _get_dialogue(dd):
-    """Return a dialogue from a dialogue dictionary.
-
-    :param dd: Dialogue dictionary.
-    :type dd: Dict[str, str] or Dict[str, str, str]
-    :return: (query, response, sources)
-    :rtype: (str, str, str)
-    """
-    if "sources" in dd.keys():
-        sources = dd["sources"]
-    else:
-        sources = None
-    return _s(dd["q"]), _s(dd.get("r", NoResponse)), sources
 
 
 def _load(content_or_fp: Union[str, bytes, TextIO, BinaryIO]) -> Dict[str, Any]:
@@ -222,7 +222,7 @@ def get_channel(
     can_select = False if channel_dict.get("can_select") == "False" else True
     channels = Channels(device, ids, can_select)
 
-    update_component(ch_name, channels, channel_dict, devices)
+    update_component(ch_name, channels, cd, devices)
 
     return channels
 
