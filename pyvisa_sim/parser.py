@@ -60,6 +60,7 @@ class SimpleChainmap(Generic[K, V]):
                 pass
         raise KeyError(key)
 
+
 def _get_dialogue(dd: Dict[str, str]) -> Tuple[str, str, Dict[str, str]]:
     """Return a dialogue from a dialogue dictionary.
 
@@ -74,6 +75,7 @@ def _get_dialogue(dd: Dict[str, str]) -> Tuple[str, str, Dict[str, str]]:
         sources = None
 
     return dd["q"].strip(" "), dd["r"].strip(" "), sources
+
 
 def _get_pair(dd: Dict[str, str]) -> Tuple[str, str]:
     """Return a pair from a dialogue dictionary."""
@@ -136,7 +138,10 @@ def parse_file(fullpath: Union[str, pathlib.Path]) -> Dict[str, Any]:
 
 
 def update_component(
-    name: str, comp: Component, component_dict: Dict[str, Any], devices: Dict[str, Device]
+    name: str,
+    comp: Component,
+    component_dict: Dict[str, Any],
+    devices: Dict[str, Device],
 ) -> None:
     """Get a component from a component dict."""
     for dia in component_dict.get("dialogues", ()):
@@ -191,7 +196,7 @@ def get_channel(
     channel_dict: Dict[str, Any],
     loader: "Loader",
     resource_dict: Dict[str, Any],
-    devices: Dict[str, Device]
+    devices: Dict[str, Device],
 ) -> Channels:
     """Get a channels from a channels dictionary.
 
@@ -232,7 +237,7 @@ def get_device(
     device_dict: Dict[str, Any],
     loader: "Loader",
     resource_dict: Dict[str, str],
-    devices: Dict[str, Device]
+    devices: Dict[str, Device],
 ) -> Device:
     """Get a device from a device dictionary.
 
@@ -267,7 +272,8 @@ def get_device(
 
     for ch_name, ch_dict in device_dict.get("channels", {}).items():
         device.add_channels(
-            ch_name, get_channel(device, ch_name, ch_dict, loader, resource_dict, devices)
+            ch_name,
+            get_channel(device, ch_name, ch_dict, loader, resource_dict, devices),
         )
 
     return device

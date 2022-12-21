@@ -207,13 +207,11 @@ class Component:
 
         """
         if sources:
-            dialogue = {
-                "func": response,
-                "sources": (sources)
-            }
+            dialogue = {"func": response, "sources": (sources)}
             self._dialogues[to_bytes(query)] = dialogue
 
-        else: self._dialogues[to_bytes(query)] = to_bytes(response)
+        else:
+            self._dialogues[to_bytes(query)] = to_bytes(response)
 
     def add_property(
         self,
@@ -252,13 +250,13 @@ class Component:
                 (name, stringparser.Parser(query), to_bytes(response_), to_bytes(error))
             )
 
-    def set_devices(self, devices:dict) -> None:
-        """"Add all initialized devices
+    def set_devices(self, devices: dict) -> None:
+        """ "Add all initialized devices
 
         :param devices: storage for devices
         """
         self.devices = devices
-    
+
     def match(self, query: bytes) -> Optional[OptionalBytes]:
         """Try to find a match for a query in the instrument commands."""
         raise NotImplementedError()
@@ -319,14 +317,14 @@ class Component:
                         # Add property and value to prop_dict
                         value = property._value
                         prop_dict[property.name] = value
-                
+
                 # Populate and run function
                 func = function.format(**prop_dict)
                 response = to_bytes(str(eval(func)))
 
-            else:   
+            else:
                 response = dialogues[query]
-                
+
             logger.debug("Found response in queries: %s" % repr(response))
 
             return response
