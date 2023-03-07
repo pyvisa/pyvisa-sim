@@ -14,8 +14,8 @@ and therefore test your applications without having real instruments connected.
 You can select the PyVISA-sim backend using **@sim** when instantiating the
 visa Resource Manager:
 
-    >>> import visa
-    >>> rm = visa.ResourceManager('@sim')
+    >>> import pyvisa
+    >>> rm = pyvisa.ResourceManager('@sim')
     >>> rm.list_resources()
     ('ASRL1::INSTR')
     >>> inst = rm.open_resource('ASRL1::INSTR', read_termination='\n')
@@ -28,7 +28,7 @@ use the NI-VISA backend for PyVISA.
 If you want to load your own file instead of the default, specify the path
 prepended to the @sim string:
 
-    >>> rm = visa.ResourceManager('your_mock_here.yaml@sim')
+    >>> rm = pyvisa.ResourceManager('your_mock_here.yaml@sim')
 
 You can write your own simulators. See :ref:`definitions` to find out how.
 
