@@ -208,7 +208,7 @@ If you want to use a file which is bundled with PyVISA-sim, just write:
 
 
 .. _YAML: http://en.wikipedia.org/wiki/YAML
-.. _`one provided with pyvisa-sim`: https://github.com/pyvisa/pyvisa-sim/blob/master/pyvisa-sim/default.yaml
+.. _`one provided with pyvisa-sim`:https://github.com/pyvisa/pyvisa-sim/blob/main/pyvisa_sim/default.yaml
 .. _`YAML online parser`: http://yaml-online-parser.appspot.com/
 .. _PEP3101: https://www.python.org/dev/peps/pep-3101/
 .. _`Lantz Example Driver`: https://lantz.readthedocs.org/en/0.3/tutorial/building.html
