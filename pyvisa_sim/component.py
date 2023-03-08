@@ -193,8 +193,9 @@ class Component:
         self._properties = {}
         self._getters = {}
         self._setters = []
+        self.devices = {}
 
-    def add_dialogue(self, query: str, response: str) -> None:
+    def add_dialogue(self, query: str, response: str, sources: dict = None) -> None:
         """Add dialogue to device.
 
         Parameters
@@ -205,7 +206,12 @@ class Component:
             Response to the dialog query.
 
         """
-        self._dialogues[to_bytes(query)] = to_bytes(response)
+        if sources:
+            dialogue = {"func": response, "sources": (sources)}
+            self._dialogues[to_bytes(query)] = dialogue
+
+        else:
+            self._dialogues[to_bytes(query)] = to_bytes(response)
 
     def add_property(
         self,
@@ -243,6 +249,13 @@ class Component:
             self._setters.append(
                 (name, stringparser.Parser(query), to_bytes(response_), to_bytes(error))
             )
+
+    def set_devices(self, devices: dict) -> None:
+        """ "Add all initialized devices
+
+        :param devices: storage for devices
+        """
+        self.devices = devices
 
     def match(self, query: bytes) -> Optional[OptionalBytes]:
         """Try to find a match for a query in the instrument commands."""
@@ -288,7 +301,30 @@ class Component:
 
         # Try to match in the queries
         if query in dialogues:
-            response = dialogues[query]
+            # if connection
+            if type(dialogues[query]) == dict:
+                dialogue = dialogues[query]
+                function = dialogue["func"]
+                sources = dialogue["sources"]
+                prop_dict = {}
+
+                for source in sources:
+                    # Find source for connection
+                    if source["name"] in self.devices._internal.keys():
+                        device = self.devices._internal[source["name"]]
+                        # Find correct property
+                        property = device._properties[source["parameter"]]
+                        # Add property and value to prop_dict
+                        value = property._value
+                        prop_dict[property.name] = value
+
+                # Populate and run function
+                func = function.format(**prop_dict)
+                response = to_bytes(str(eval(func)))
+
+            else:
+                response = dialogues[query]
+
             logger.debug("Found response in queries: %s" % repr(response))
 
             return response

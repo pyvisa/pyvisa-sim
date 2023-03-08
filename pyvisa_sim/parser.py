@@ -61,6 +61,22 @@ class SimpleChainmap(Generic[K, V]):
         raise KeyError(key)
 
 
+def _get_dialogue(dd: Dict[str, str]) -> Tuple[str, str, Dict[str, str]]:
+    """Return a dialogue from a dialogue dictionary.
+
+    :param dd: Dialogue dictionary.
+    :type dd: Dict[str, str] or Dict[str, str, str]
+    :return: (query, response, sources)
+    :rtype: (str, str, str)
+    """
+    if "sources" in dd.keys():
+        sources = dd["sources"]
+    else:
+        sources = None
+
+    return dd["q"].strip(" "), dd["r"].strip(" "), sources
+
+
 def _get_pair(dd: Dict[str, str]) -> Tuple[str, str]:
     """Return a pair from a dialogue dictionary."""
     return dd["q"].strip(" "), dd["r"].strip(" ")
@@ -122,12 +138,15 @@ def parse_file(fullpath: Union[str, pathlib.Path]) -> Dict[str, Any]:
 
 
 def update_component(
-    name: str, comp: Component, component_dict: Dict[str, Any]
+    name: str,
+    comp: Component,
+    component_dict: Dict[str, Any],
+    devices: Dict[str, Device],
 ) -> None:
     """Get a component from a component dict."""
     for dia in component_dict.get("dialogues", ()):
         try:
-            comp.add_dialogue(*_get_pair(dia))
+            comp.add_dialogue(*_get_dialogue(dia))
         except Exception as e:
             msg = "In device %s, malformed dialogue %s\n%r"
             raise Exception(msg % (name, dia, e))
@@ -148,6 +167,12 @@ def update_component(
         except Exception as e:
             msg = "In device %s, malformed property %s\n%r"
             raise type(e)(msg % (name, prop_name, format_exc()))
+
+    try:
+        comp.set_devices(devices)
+    except Exception as e:
+        msg = "In device %s, malformed devices %s\n%r"
+        raise Exception(msg % (name, devices, e))
 
 
 def get_bases(definition_dict: Dict[str, Any], loader: "Loader") -> Dict[str, Any]:
@@ -171,6 +196,7 @@ def get_channel(
     channel_dict: Dict[str, Any],
     loader: "Loader",
     resource_dict: Dict[str, Any],
+    devices: Dict[str, Device],
 ) -> Channels:
     """Get a channels from a channels dictionary.
 
@@ -201,7 +227,7 @@ def get_channel(
     can_select = False if channel_dict.get("can_select") == "False" else True
     channels = Channels(device, ids, can_select)
 
-    update_component(ch_name, channels, cd)
+    update_component(ch_name, channels, cd, devices)
 
     return channels
 
@@ -211,6 +237,7 @@ def get_device(
     device_dict: Dict[str, Any],
     loader: "Loader",
     resource_dict: Dict[str, str],
+    devices: Dict[str, Device],
 ) -> Device:
     """Get a device from a device dictionary.
 
@@ -241,11 +268,12 @@ def get_device(
     for itype, eom_dict in device_dict.get("eom", {}).items():
         device.add_eom(itype, *_get_pair(eom_dict))
 
-    update_component(name, device, device_dict)
+    update_component(name, device, device_dict, devices)
 
     for ch_name, ch_dict in device_dict.get("channels", {}).items():
         device.add_channels(
-            ch_name, get_channel(device, ch_name, ch_dict, loader, resource_dict)
+            ch_name,
+            get_channel(device, ch_name, ch_dict, loader, resource_dict, devices),
         )
 
     return device
@@ -410,7 +438,7 @@ def get_devices(filename: Union[str, pathlib.Path], bundled: bool) -> Devices:
         )
 
         devices.add_device(
-            resource_name, get_device(device_name, dd, loader, resource_dict)
+            resource_name, get_device(device_name, dd, loader, resource_dict, devices)
         )
 
     return devices

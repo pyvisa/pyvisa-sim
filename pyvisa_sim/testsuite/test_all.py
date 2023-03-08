@@ -24,10 +24,12 @@ def test_list(resource_manager):
         "USB0::0x1111::0x2222::0x3692::0::INSTR",
         "USB0::0x1111::0x2222::0x4444::0::INSTR",
         "USB0::0x1111::0x2222::0x4445::0::RAW",
+        "GPIB0::2::INSTR",
         "GPIB0::4::INSTR",
         "GPIB0::8::INSTR",
         "GPIB0::9::INSTR",
         "GPIB0::10::INSTR",
+        "GPIB0::22::INSTR",
     }
 
 
@@ -179,3 +181,14 @@ def test_instrument_for_error_state(resource, resource_manager):
 
     inst.write(":VOLT:IMM:AMPL 0")
     assert_instrument_response(inst, ":SYST:ERR?", "1, Command error")
+
+
+def test_dialogue_connection(resource_manager):
+    inst1 = resource_manager.open_resource("GPIB0::22::INSTR", read_termination="\n")
+    inst2 = resource_manager.open_resource("GPIB0::2::INSTR", read_termination="\n")
+    inst2.query("POW:LEV 8.5")
+    response = inst1.query("READ1")
+    assert response == "15.6175"
+    inst2.query("POW:LEV 1.0")
+    response = inst1.query("READ1")
+    assert response == "-0.77"

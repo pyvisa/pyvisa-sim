@@ -80,7 +80,7 @@ class Channels(Component):
         self._getters = ChDict(__default__={})
         self._dialogues = ChDict(__default__={})
 
-    def add_dialogue(self, query: str, response: str) -> None:
+    def add_dialogue(self, query: str, response: str, sources: dict = {}) -> None:
         """Add dialogue to channel.
 
         Parameters
@@ -91,7 +91,12 @@ class Channels(Component):
             Response sent in response to a query.
 
         """
-        self._dialogues["__default__"][to_bytes(query)] = to_bytes(response)
+        if sources:
+            dialogue = {"func": response, "sources": (sources)}
+            self._dialogues["__default__"][to_bytes(query)] = dialogue
+
+        else:
+            self._dialogues["__default__"][to_bytes(query)] = to_bytes(response)
 
     def add_property(
         self,
