@@ -71,7 +71,6 @@ class Channels(Component):
     can_select: bool
 
     def __init__(self, device: "Device", ids: List[str], can_select: bool):
-
         super(Channels, self).__init__()
         self.can_select: bool = can_select
         self._selected = None
