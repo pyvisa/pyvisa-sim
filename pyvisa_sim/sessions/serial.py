@@ -16,7 +16,6 @@ from . import session
 
 @session.Session.register(constants.InterfaceType.asrl, "INSTR")
 class SerialInstrumentSession(session.Session):
-
     parsed: rname.ASRLInstr
 
     def after_parsing(self) -> None:
@@ -25,7 +24,6 @@ class SerialInstrumentSession(session.Session):
         )
 
     def read(self, count: int) -> Tuple[bytes, constants.StatusCode]:
-
         # TODO: Implement VI_ATTR_SUPPRESS_END_EN
         end_in, _ = self.get_attribute(constants.ResourceAttribute.asrl_end_in)
 
@@ -56,7 +54,6 @@ class SerialInstrumentSession(session.Session):
                     return out, constants.StatusCode.success_termination_character_read
 
             elif end_in == constants.SerialTermination.last_bit:
-
                 if common.last_int(out) & mask:
                     return out, constants.StatusCode.success
 
@@ -90,7 +87,6 @@ class SerialInstrumentSession(session.Session):
             for val in common.iter_bytes(data, mask, send_end):
                 self.device.write(val)
         else:
-
             for i in range(len(data)):
                 self.device.write(data[i : i + 1])
 

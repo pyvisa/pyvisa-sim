@@ -59,7 +59,6 @@ class BaseTCPIPSession(session.Session):
 
 @session.Session.register(constants.InterfaceType.tcpip, "INSTR")
 class TCPIPInstrumentSession(BaseTCPIPSession):
-
     parsed: rname.TCPIPInstr
 
     def after_parsing(self) -> None:
@@ -74,7 +73,6 @@ class TCPIPInstrumentSession(BaseTCPIPSession):
 
 @session.Session.register(constants.InterfaceType.tcpip, "SOCKET")
 class TCPIPSocketSession(BaseTCPIPSession):
-
     parsed: rname.TCPIPSocket
 
     def after_parsing(self) -> None:
