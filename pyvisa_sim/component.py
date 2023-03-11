@@ -189,19 +189,10 @@ class Component:
     """A component of a device."""
 
     def __init__(self) -> None:
-        #: Stores the queries accepted by the device.
-        #: query: response
-        self._dialogues: Dict[bytes, bytes] = {}
-        #: Maps property names to value, type, validator
-        self._properties: Dict[str, Property] = {}
-        #: Stores the getter queries accepted by the device.
-        #: query: (property_name, response)
-        self._getters: Dict[bytes, Tuple[str, str]] = {}
-        #: Stores the setters queries accepted by the device.
-        #: (property_name, string parser query, response, error response)
-        self._setters: List[
-            Tuple[str, stringparser.Parser, OptionalBytes, OptionalBytes]
-        ] = []
+        self._dialogues = {}
+        self._properties = {}
+        self._getters = {}
+        self._setters = []
 
     def add_dialogue(self, query: str, response: str) -> None:
         """Add dialogue to device.
@@ -258,6 +249,21 @@ class Component:
         raise NotImplementedError()
 
     # --- Private API
+
+    #: Stores the queries accepted by the device.
+    #: query: response
+    _dialogues: Dict[bytes, bytes]
+
+    #: Maps property names to value, type, validator
+    _properties: Dict[str, Property]
+
+    #: Stores the getter queries accepted by the device.
+    #: query: (property_name, response)
+    _getters: Dict[bytes, Tuple[str, str]]
+
+    #: Stores the setters queries accepted by the device.
+    #: (property_name, string parser query, response, error response)
+    _setters: List[Tuple[str, stringparser.Parser, OptionalBytes, OptionalBytes]]
 
     def _match_dialog(
         self, query: bytes, dialogues: Optional[Dict[bytes, bytes]] = None
