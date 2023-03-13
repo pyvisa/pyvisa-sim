@@ -75,7 +75,6 @@ class USBInstrumentSession(session.Session):
 
 @session.Session.register(constants.InterfaceType.usb, "RAW")
 class USBRawSession(session.Session):
-
     parsed: rname.USBRaw
 
     def after_parsing(self) -> None:
