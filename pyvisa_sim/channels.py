@@ -196,7 +196,7 @@ class Channels(Component):
                     self._selected = parsed["ch_id"]
                     self._properties[name].set_value(parsed["0"])
                 else:
-                    self._properties[name].set_value(parsed)
+                    self._properties[name].set_value(parsed)  # type: ignore[arg-type]
                 return response
             except ValueError:
                 if isinstance(error_response, bytes):
