@@ -63,7 +63,7 @@ class SimpleChainmap(Generic[K, V]):
 
 def _get_pair(dd: Dict[str, str]) -> Tuple[str, str]:
     """Return a pair from a dialogue dictionary."""
-    return dd["q"].strip(" "), dd["r"].strip(" ")
+    return dd["q"].strip(" "), dd["r"].strip(" ") if "r" in dd else NoResponse
 
 
 def _get_triplet(
