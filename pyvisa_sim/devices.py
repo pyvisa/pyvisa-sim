@@ -122,7 +122,6 @@ class Device(Component):
     delimiter: bytes
 
     def __init__(self, name: str, delimiter: bytes) -> None:
-
         super(Device, self).__init__()
         self.name = name
         self.delimiter = delimiter

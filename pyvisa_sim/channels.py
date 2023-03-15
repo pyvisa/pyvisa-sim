@@ -71,7 +71,6 @@ class Channels(Component):
     can_select: bool
 
     def __init__(self, device: "Device", ids: List[str], can_select: bool):
-
         super(Channels, self).__init__()
         self.can_select: bool = can_select
         self._selected = None
@@ -194,9 +193,9 @@ class Channels(Component):
             try:
                 if isinstance(parsed, dict) and "ch_id" in parsed:
                     self._selected = parsed["ch_id"]
-                    self._properties[name].set_value(parsed["0"])
+                    self._properties[name].set_value(str(parsed["0"]))
                 else:
-                    self._properties[name].set_value(parsed)  # type: ignore[arg-type]
+                    self._properties[name].set_value(str(parsed))
                 return response
             except ValueError:
                 if isinstance(error_response, bytes):
