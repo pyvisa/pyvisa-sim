@@ -11,7 +11,7 @@ from . import session
 
 
 @session.Session.register(constants.InterfaceType.gpib, "INSTR")
-class GPIBInstrumentSession(session.Session):
+class GPIBInstrumentSession(session.MessageBasedSession):
     parsed: rname.GPIBInstr
 
     def after_parsing(self) -> None:

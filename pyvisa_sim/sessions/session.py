@@ -204,6 +204,10 @@ class Session:
 
         return constants.StatusCode.success
 
+
+class MessageBasedSession(Session):
+    """Base class for Message-Based sessions that support ``read`` and ``write`` methods."""
+
     def read(self, count: int) -> Tuple[bytes, constants.StatusCode]:
         end_char, _ = self.get_attribute(constants.ResourceAttribute.termchar)
         enabled, _ = self.get_attribute(constants.ResourceAttribute.termchar_enabled)

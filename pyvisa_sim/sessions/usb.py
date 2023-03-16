@@ -12,7 +12,7 @@ from pyvisa import constants, rname
 from . import session
 
 
-class BaseUSBSession(session.Session):
+class BaseUSBSession(session.MessageBasedSession):
     parsed: Union[rname.USBInstr, rname.USBRaw]
 
     def after_parsing(self) -> None:

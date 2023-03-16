@@ -10,7 +10,7 @@ from pyvisa import constants, rname
 from . import session
 
 
-class BaseTCPIPSession(session.Session):
+class BaseTCPIPSession(session.MessageBasedSession):
     """Base class for TCPIP sessions."""
 
 
