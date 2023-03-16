@@ -15,7 +15,7 @@ from . import session
 
 
 @session.Session.register(constants.InterfaceType.asrl, "INSTR")
-class SerialInstrumentSession(session.Session):
+class SerialInstrumentSession(session.MessageBasedSession):
     parsed: rname.ASRLInstr
 
     def after_parsing(self) -> None:
