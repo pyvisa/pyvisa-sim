@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 
 """
+import time
 from typing import Any, Callable, Dict, Optional, Tuple, Type, TypeVar
 
 from pyvisa import attributes, constants, rname, typing
@@ -202,3 +203,47 @@ class Session:
             return constants.StatusCode.error_nonsupported_attribute_state
 
         return constants.StatusCode.success
+
+
+class MessageBasedSession(Session):
+    """Base class for Message-Based sessions that support ``read`` and ``write`` methods."""
+
+    def read(self, count: int) -> Tuple[bytes, constants.StatusCode]:
+        end_char, _ = self.get_attribute(constants.ResourceAttribute.termchar)
+        enabled, _ = self.get_attribute(constants.ResourceAttribute.termchar_enabled)
+        timeout, _ = self.get_attribute(constants.ResourceAttribute.timeout_value)
+        timeout /= 1000
+
+        start = time.time()
+
+        out = b""
+
+        while time.time() - start <= timeout:
+            last = self.device.read()
+
+            if not last:
+                time.sleep(0.01)
+                continue
+
+            out += last
+
+            if enabled:
+                if len(out) > 0 and out[-1] == end_char:
+                    return out, constants.StatusCode.success_termination_character_read
+
+            if len(out) == count:
+                return out, constants.StatusCode.success_max_count_read
+        else:
+            return out, constants.StatusCode.error_timeout
+
+    def write(self, data: bytes) -> Tuple[int, constants.StatusCode]:
+        send_end = self.get_attribute(constants.ResourceAttribute.send_end_enabled)
+
+        for i in range(len(data)):
+            self.device.write(data[i : i + 1])
+
+        if send_end:
+            # EOM4882
+            pass
+
+        return len(data), constants.StatusCode.success
