@@ -232,10 +232,6 @@ class Device(Component):
         if not isinstance(data, bytes):
             raise TypeError("data must be an instance of bytes")
 
-        if len(data) != 1:
-            msg = "data must have a length of 1, not %d"
-            raise ValueError(msg % len(data))
-
         self._input_buffer.extend(data)
 
         le = len(self._query_eom)

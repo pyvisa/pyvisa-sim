@@ -239,8 +239,7 @@ class MessageBasedSession(Session):
     def write(self, data: bytes) -> Tuple[int, constants.StatusCode]:
         send_end = self.get_attribute(constants.ResourceAttribute.send_end_enabled)
 
-        for i in range(len(data)):
-            self.device.write(data[i : i + 1])
+        self.device.write(data)
 
         if send_end:
             # EOM4882
