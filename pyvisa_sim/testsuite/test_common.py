@@ -13,7 +13,18 @@ from pyvisa_sim import common
         # Can't figure this one out. Getting ValueError: bytes must in in range(0, 256)
         # If I knew more about the purpose of `iter_bytes` then maybe I could
         # reconcile it, but I don't have time to investigate right now.
-        #  (b"1234", 3, True, b"1234"),  # TODO: figure out correct 'want'
+        pytest.param(
+            b"1234",
+            3,
+            True,
+            b"1234",
+            marks=pytest.mark.xfail(
+                reason=(
+                    "ValueError bytes must be in range(0, 256). TODO: figure"
+                    " out correct 'want' value."
+                )
+            ),
+        ),
     ],
 )
 def test_iter_bytes(
