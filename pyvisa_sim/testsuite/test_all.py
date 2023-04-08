@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import logging
+
 import pytest
 from pyvisa.errors import VisaIOError
 
@@ -179,3 +181,18 @@ def test_instrument_for_error_state(resource, resource_manager):
 
     inst.write(":VOLT:IMM:AMPL 0")
     assert_instrument_response(inst, ":SYST:ERR?", "1, Command error")
+
+
+def test_device_write_logging(caplog, resource_manager) -> None:
+    instr = resource_manager.open_resource(
+        "USB0::0x1111::0x2222::0x4444::0::INSTR",
+        read_termination="\n",
+        write_termination="\n",
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        instr.write("*IDN?")
+        instr.read()
+
+    assert "input buffer: b'D'" not in caplog.text
+    assert r"input buffer: b'*IDN?\n'" in caplog.text

@@ -1,6 +1,11 @@
 PyVISA-sim Changelog
 ====================
 
+Unreleased
+----------
+
+- Fixed debug logging a single character at a time. PR #79
+
 0.5.1 (2022-09-08)
 ------------------
 
