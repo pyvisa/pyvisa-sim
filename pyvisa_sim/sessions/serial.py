@@ -82,9 +82,10 @@ class SerialInstrumentSession(session.MessageBasedSession):
         len_transferred = len(data)
 
         if asrl_end == constants.SerialTermination.last_bit:
-            last_bit, _ = self.get_attribute(constants.ResourceAttribute.asrl_data_bits)
-            mask = 1 << (last_bit - 1)
-            val = b"".join(common.iter_bytes(data, mask, send_end))
+            data_bits, _ = self.get_attribute(
+                constants.ResourceAttribute.asrl_data_bits
+            )
+            val = b"".join(common.iter_bytes(data, data_bits, send_end))
             self.device.write(val)
         else:
             self.device.write(data)
