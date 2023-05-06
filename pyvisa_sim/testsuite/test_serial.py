@@ -21,7 +21,7 @@ def test_serial_write_with_termination_last_bit(resource_manager):
 
     instr.set_visa_attribute(
         pyvisa.constants.ResourceAttribute.send_end_enabled,
-        pyvisa.constants.VI_TRUE,
+        pyvisa.constants.VI_FALSE,
     )
 
     instr.write("*IDN?")
