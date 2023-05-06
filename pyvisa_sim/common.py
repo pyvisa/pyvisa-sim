@@ -16,8 +16,14 @@ from pyvisa import logger
 logger = logging.LoggerAdapter(logger, {"backend": "sim"})  # type: ignore
 
 
+def _create_bitmask(bits: int) -> int:
+    """Create a bitmask for the given number of bits."""
+    mask = (1 << bits) - 1
+    return mask
+
+
 def iter_bytes(
-    data: bytes, data_bits: Optional[int] = None, send_end: bool = False
+    data: bytes, data_bits: Optional[int] = None, send_end: Optional[bool] = False
 ) -> Iterator[bytes]:
     """Clip values to the correct number of bits per byte.
 
@@ -27,8 +33,12 @@ def iter_bytes(
     ----------
     data : The data to clip as a byte string.
     data_bits : How many bits per byte should be sent. Clip to this many bits.
-        For example: data_bits=5: 0xff (0b1111_1111) --> 0x1f (0b0001_1111)
-    send_end : If True, send the final byte unclipped (with all 8 bits).
+        For example: data_bits=5: 0xff (0b1111_1111) --> 0x1f (0b0001_1111).
+        Values above 8 will be clipped to 8.
+    send_end : If True, send the final byte with the highest bit of data_bits
+        set to 1. If False, send the final byte with the highest bit of data_bits
+        set to 0. If None, do not adjust the higest bit of data_bits (only
+        apply the mask defined by data_bits).
 
     References
     ----------
@@ -43,17 +53,34 @@ def iter_bytes(
         for d in data:
             yield bytes([d])
     else:
-        # 2**8     = 0b1000_0000
-        # 2**8 - 1 = 0b0111_1111
-        mask = 2**data_bits - 1
+        if data_bits <= 0:
+            raise ValueError("'data_bits' cannot be zero or negative")
+        if data_bits > 8:
+            data_bits = 8
 
+        mask = _create_bitmask(data_bits)
+
+        # Send everything but the last byte with the mask applied.
         for d in data[:-1]:
             yield bytes([d & mask])
 
-        if send_end:
-            yield bytes([data[-1]])
+        last_byte = data[-1]
+
+        # Send the last byte adjusted by `send_end`
+        if send_end is None:
+            # only apply the mask
+            yield bytes([last_byte & mask])
+        elif bool(send_end) is True:
+            # apply the mask and set highest of data_bits to 1
+            highest_bit = 1 << (data_bits - 1)
+            yield bytes([(last_byte & mask) | highest_bit])
+        elif bool(send_end) is False:
+            # apply the mask and set highest of data_bits to 0
+            # This is effectively the same has reducing the mask by 1 bit.
+            new_mask = _create_bitmask(data_bits - 1)
+            yield bytes([last_byte & new_mask])
         else:
-            yield bytes([data[-1] & mask])
+            raise ValueError(f"Unknown 'send_end' value '{send_end}'")
 
 
 int_to_byte: Callable[[int], bytes] = lambda val: bytes([val])
