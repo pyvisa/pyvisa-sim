@@ -45,6 +45,7 @@ def iter_bytes(
     + https://www.ivifoundation.org/downloads/Architecture%20Specifications/vpp43_2022-05-19.pdf,
     + https://www.ni.com/docs/en-US/bundle/ni-visa/page/ni-visa/vi_attr_asrl_data_bits.html,
     + https://www.ni.com/docs/en-US/bundle/ni-visa/page/ni-visa/vi_attr_asrl_end_out.html
+
     """
     if send_end and data_bits is None:
         raise ValueError("'send_end' requires a valid 'data_bits' value.")
