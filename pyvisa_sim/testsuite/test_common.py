@@ -50,13 +50,34 @@ def test_create_bitmask(bits, want):
         (b"\xff", 9, None, b"\xff"),
         (b"\xff", 9, False, b"\x7f"),
         (b"\xff", 9, True, b"\xff"),
-        # send_end should only impact the final byte
-        (b"\x6d\x5c\x25\x25", 4, None, b"\r\x0c\x05\x05"),
-        (b"\x6d\x5c\x25\x25", 4, False, b"\r\x0c\x05\x05"),
-        (b"\x6d\x5c\x25\x25", 4, True, b"\r\x0c\x05\x0d"),
-        (b"`\xa0", 6, None, b"  "),
-        (b"`\xa0", 6, False, b" \x00"),
-        (b"`\xa0", 6, True, b"  "),
+        # send_end=None only applies the mask everywhere and doesn't touch the
+        # highest bit
+        # 0x6d: 0b0110_1101 (m) --> 0x0d: 0b0000_1101 (\r)
+        # 0x5e: 0b0101_1110 (^) --> 0x0e: 0b0000_1110
+        # 0x25: 0b0010_0101 (%) --> 0x05: 0b0000_0101
+        # 0x25: 0b0010_0101 (%) --> 0x05: 0b0000_0101
+        (b"\x6d\x5e\x25\x25", 4, None, b"\r\x0e\x05\x05"),
+        # send_end=False sets highest post-mask bit to 0 for all
+        # 0x6d: 0b0110_1101 (m) --> 0x05: 0b0000_0101
+        # 0x5e: 0b0101_1110 (^) --> 0x06: 0b0000_0110
+        # 0x25: 0b0010_0101 (%) --> 0x05: 0b0000_0101
+        # 0x25: 0b0010_0101 (%) --> 0x05: 0b0000_0101
+        (b"\x6d\x5e\x25\x25", 4, False, b"\x05\x06\x05\x05"),
+        # send_end=True sets highest bit to 0 except for final byte
+        # 0x6d: 0b0110_1101 (m) --> 0x05: 0b0000_0101
+        # 0x5e: 0b0101_1110 (^) --> 0x06: 0b0000_0110
+        # 0x25: 0b0010_0101 (%) --> 0x05: 0b0000_0101
+        # 0x25: 0b0010_0101 (%) --> 0x0d: 0b0000_1101
+        (b"\x6d\x5e\x25\x25", 4, True, b"\x05\x06\x05\x0d"),
+        # 0x61: 0b0110_0001 (a) --> 0x21: 0b0010_0001 (!)
+        # 0xb1: 0b1011_0001 (±) --> 0x31: 0b0011_0001 (1)
+        (b"a\xb1", 6, None, b"\x21\x31"),
+        # 0x61: 0b0110_0001 (a) --> 0x01: 0b0000_0001
+        # 0xb1: 0b1011_0001 (±) --> 0x11: 0b0001_0001
+        (b"a\xb1", 6, False, b"\x01\x11"),
+        # 0x61: 0b0110_0001 (a) --> 0x01: 0b0000_0001
+        # 0xb1: 0b1011_0001 (±) --> 0x31: 0b0011_0001 (1)
+        (b"a\xb1", 6, True, b"\x011"),
     ],
 )
 def test_iter_bytes(
