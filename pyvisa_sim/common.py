@@ -34,11 +34,14 @@ def iter_bytes(
     data : The data to clip as a byte string.
     data_bits : How many bits per byte should be sent. Clip to this many bits.
         For example: data_bits=5: 0xff (0b1111_1111) --> 0x1f (0b0001_1111).
-        Values above 8 will be clipped to 8.
-    send_end : If True, send the final byte with the highest bit of data_bits
-        set to 1. If False, send the final byte with the highest bit of data_bits
-        set to 0. If None, do not adjust the higest bit of data_bits (only
-        apply the mask defined by data_bits).
+        Acceptable range is 5 to 8, inclusive. Values above 8 will be clipped to 8.
+        This maps to the VISA attribute VI_ATTR_ASRL_DATA_BITS.
+    send_end :
+        If None, apply the mask that is determined by data_bits.
+        If False, apply the mask and set the highest (post-mask) bit to 0 for
+        all bytes.
+        If True, apply the mask and set the highest (post-mask) bit to 0 for
+        all bytes except for the final byte, which has the highest bit set to 1.
 
     References
     ----------
@@ -59,27 +62,27 @@ def iter_bytes(
         if data_bits > 8:
             data_bits = 8
 
-        mask = _create_bitmask(data_bits)
-
-        # Send everything but the last byte with the mask applied.
-        for d in data[:-1]:
-            yield bytes([d & mask])
-
-        last_byte = data[-1]
-
-        # Send the last byte adjusted by `send_end`
         if send_end is None:
             # only apply the mask
-            yield bytes([last_byte & mask])
+            mask = _create_bitmask(data_bits)
+            for d in data:
+                yield bytes([d & mask])
+        elif bool(send_end) is False:
+            # apply the mask and set highest bits to 0
+            # This is effectively the same has reducing the mask by 1 bit.
+            mask = _create_bitmask(data_bits - 1)
+            for d in data:
+                yield bytes([d & mask])
         elif bool(send_end) is True:
-            # apply the mask and set highest of data_bits to 1
+            # apply the mask and set highest bits to 0
+            # This is effectively the same has reducing the mask by 1 bit.
+            mask = _create_bitmask(data_bits - 1)
+            for d in data[:-1]:
+                yield bytes([d & mask])
+            # except for the last byte which has it's highest bit set to 1.
+            last_byte = data[-1]
             highest_bit = 1 << (data_bits - 1)
             yield bytes([(last_byte & mask) | highest_bit])
-        elif bool(send_end) is False:
-            # apply the mask and set highest of data_bits to 0
-            # This is effectively the same has reducing the mask by 1 bit.
-            new_mask = _create_bitmask(data_bits - 1)
-            yield bytes([last_byte & new_mask])
         else:
             raise ValueError(f"Unknown 'send_end' value '{send_end}'")
 
