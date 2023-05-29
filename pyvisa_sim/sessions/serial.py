@@ -75,6 +75,7 @@ class SerialInstrumentSession(session.MessageBasedSession):
     def write(self, data: bytes) -> Tuple[int, constants.StatusCode]:
         send_end, _ = self.get_attribute(constants.ResourceAttribute.send_end_enabled)
         asrl_end, _ = self.get_attribute(constants.ResourceAttribute.asrl_end_out)
+        data_bits, _ = self.get_attribute(constants.ResourceAttribute.asrl_data_bits)
 
         end_char, _ = self.get_attribute(constants.ResourceAttribute.termchar)
         end_char = common.int_to_byte(end_char)
@@ -82,13 +83,11 @@ class SerialInstrumentSession(session.MessageBasedSession):
         len_transferred = len(data)
 
         if asrl_end == constants.SerialTermination.last_bit:
-            data_bits, _ = self.get_attribute(
-                constants.ResourceAttribute.asrl_data_bits
-            )
             val = b"".join(common.iter_bytes(data, data_bits, send_end))
             self.device.write(val)
         else:
-            self.device.write(data)
+            val = b"".join(common.iter_bytes(data, data_bits, send_end=None))
+            self.device.write(val)
 
             if asrl_end == constants.SerialTermination.termination_char:
                 if send_end:
