@@ -5,6 +5,8 @@ Unreleased
 ----------
 
 - Fixed debug logging a single character at a time. PR #79
+- Fixed issue with `common.iter_bytes` where the masked bits would be incorrect.
+  PR #81
 
 0.5.1 (2022-09-08)
 ------------------

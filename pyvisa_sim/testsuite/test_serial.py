@@ -19,7 +19,6 @@ def test_serial_write_with_termination_last_bit(resource_manager):
         pyvisa.constants.SerialTermination.last_bit,
     )
 
-    # There's a bug (maybe?) in common.iter_bytes that we want to avoid for now.
     instr.set_visa_attribute(
         pyvisa.constants.ResourceAttribute.send_end_enabled,
         pyvisa.constants.VI_FALSE,
