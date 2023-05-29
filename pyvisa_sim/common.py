@@ -23,7 +23,7 @@ def _create_bitmask(bits: int) -> int:
 
 
 def iter_bytes(
-    data: bytes, data_bits: Optional[int] = None, send_end: Optional[bool] = False
+    data: bytes, data_bits: Optional[int] = None, send_end: Optional[bool] = None
 ) -> Iterator[bytes]:
     """Clip values to the correct number of bits per byte.
 
@@ -37,7 +37,7 @@ def iter_bytes(
         Acceptable range is 5 to 8, inclusive. Values above 8 will be clipped to 8.
         This maps to the VISA attribute VI_ATTR_ASRL_DATA_BITS.
     send_end :
-        If None, apply the mask that is determined by data_bits.
+        If None (the default), apply the mask that is determined by data_bits.
         If False, apply the mask and set the highest (post-mask) bit to 0 for
         all bytes.
         If True, apply the mask and set the highest (post-mask) bit to 0 for
