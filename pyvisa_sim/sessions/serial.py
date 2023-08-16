@@ -36,11 +36,11 @@ class SerialInstrumentSession(session.MessageBasedSession):
 
         last_bit, _ = self.get_attribute(constants.ResourceAttribute.asrl_data_bits)
         mask = 1 << (last_bit - 1)
-        start = time.time()
+        start = time.monotonic()
 
         out = b""
 
-        while time.time() - start <= timeout:
+        while time.monotonic() - start <= timeout:
             last = self.device.read()
 
             if not last:
