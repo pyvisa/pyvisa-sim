@@ -214,11 +214,11 @@ class MessageBasedSession(Session):
         timeout, _ = self.get_attribute(constants.ResourceAttribute.timeout_value)
         timeout /= 1000
 
-        start = time.time()
+        start = time.monotonic()
 
         out = b""
 
-        while time.time() - start <= timeout:
+        while time.monotonic() - start <= timeout:
             last = self.device.read()
 
             if not last:
