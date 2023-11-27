@@ -68,8 +68,7 @@ Using ``pip``:
 
 or install the development version:
 
-   $ pip install
-   `git+https://github.com/pyvisa/pyvisa-sim`_
+   $ pip install git+https://github.com/pyvisa/pyvisa-sim
 
 PyVISA is automatically installed if needed.
 
@@ -77,9 +76,6 @@ PyVISA is automatically installed if needed.
 Documentation
 -------------
 
-The documentation can be read online at
-`https://pyvisa-sim.readthedocs.org`_
+The documentation can be read online at https://pyvisa-sim.readthedocs.org
 
-.. _VISA: http://www.ivifoundation.org/Downloads/Specifications.htm
-.. _`https://github.com/pyvisa/pyvisa-sim/zipball/master`: https://github.com/pyvisa/pyvisa-sim/zipball/master
-.. _`https://pyvisa-sim.readthedocs.org`: https://pyvisa-sim.readthedocs.org
+.. _VISA: http://www.ivifoundation.org/Downloads/Specifications.html
