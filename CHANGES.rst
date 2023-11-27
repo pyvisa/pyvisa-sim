@@ -1,8 +1,8 @@
 PyVISA-sim Changelog
 ====================
 
-Unreleased
-----------
+0.6.0 (2023-11-27)
+------------------
 
 - Fixed debug logging a single character at a time. PR #79
 - Fixed issue with `common.iter_bytes` where the masked bits would be incorrect.
