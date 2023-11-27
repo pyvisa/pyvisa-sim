@@ -22,8 +22,8 @@ visa Resource Manager:
     >>> print(inst.query("?IDN"))
 
 
-That's all! Except for **@sim**, the code is exactly what you would write in order to
-use the NI-VISA backend for PyVISA.
+That's all! Except for **@sim**, the code is exactly what you would write in
+order to use the NI-VISA backend for PyVISA.
 
 If you want to load your own file instead of the default, specify the path
 prepended to the @sim string:
