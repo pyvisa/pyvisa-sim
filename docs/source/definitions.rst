@@ -65,7 +65,9 @@ error
 
 The error key specifies the default message to be given when a message is not
 understood or the user tries to set a property outside the right range.
-For example::
+For example:
+
+.. code-block:: yaml
 
     error: ERROR
 
@@ -97,7 +99,7 @@ dialogues
 
 This is one of the main concepts of PyVISA-sim. A dialogue is a query which may
 be followed by a response. The dialogues item is a list of elements, normally
-**q**, **r** pairs. Fore example::
+**q**, **r** pairs. For example:
 
 .. code-block:: yaml
 
@@ -175,6 +177,42 @@ You can also specify the valid values, for example:
           valid: [1, 3, 5]
 
 Notice that even if the type is a float, the communication is done with strings.
+
+
+randomized output
+-----------------
+
+Both dialogs and properties can be configured to output random values. This can
+be used to simulate those instruments that returns measurements, such as DMM.
+
+The syntax is this: ``RANDOM(min, max, num_of_results) {...}``
+
+The output will be one ore more random **float(s)** between ``min`` and ``max``.
+
+Below are a few examples.
+
+.. code-block:: yaml
+
+    dialogues:
+      - q: ":READ?"
+        r: "RANDOM(0, 4.55, 16) {:.5f}"
+
+
+.. code-block:: yaml
+
+    properties:
+      voltage:
+        getter:
+          q: ":VOLT?"
+          r: "RANDOM(0, 10, 1) {:.2f}"
+
+.. note::
+
+    Wrong syntax will raise the following exception:
+
+    .. code-block:: console
+
+        pyvisa-sim: Wrong RANDOM directive, see documentation for correct usage.
 
 
 resources
