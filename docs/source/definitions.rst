@@ -185,7 +185,7 @@ randomized output
 Both dialogs and properties can be configured to output random values. This can
 be used to simulate those instruments that returns measurements, such as DMM.
 
-The syntax is this: ``RANDOM(min, max, num_of_results) {...}``
+The syntax is this: ``{RANDOM(min, max, num_of_results):<...>}``
 
 The output will be one ore more random **float(s)** between ``min`` and ``max``.
 
@@ -195,7 +195,7 @@ Below are a few examples.
 
     dialogues:
       - q: ":READ?"
-        r: "RANDOM(0, 4.55, 16) {:.5f}"
+        r: "{RANDOM(0, 4.55, 16):.5f}"
 
 
 .. code-block:: yaml
@@ -204,7 +204,7 @@ Below are a few examples.
       voltage:
         getter:
           q: ":VOLT?"
-          r: "RANDOM(0, 10, 1) {:.2f}"
+          r: "{RANDOM(0, 10, 1):.2f}"
 
 .. note::
 

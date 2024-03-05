@@ -21,9 +21,9 @@ from typing import (
     overload,
 )
 
-import stringparser
-import re
 import random
+import re
+import stringparser
 from typing_extensions import TypeAlias  # not needed starting with 3.10
 
 from .common import logger
@@ -42,13 +42,11 @@ OptionalBytes: TypeAlias = Union[bytes, Literal[Responses.NO]]
 
 
 @overload
-def to_bytes(val: str) -> bytes:
-    ...
+def to_bytes(val: str) -> bytes: ...
 
 
 @overload
-def to_bytes(val: Literal[Responses.NO]) -> Literal[Responses.NO]:
-    ...
+def to_bytes(val: Literal[Responses.NO]) -> Literal[Responses.NO]: ...
 
 
 def to_bytes(val):
@@ -67,10 +65,12 @@ def random_response(response: str) -> str:
     """
     Return a response containing one or more random values.
     """
-    random_directive = re.findall(r"RANDOM\((\d*.\d*), (\d*.\d*), (\d*)\) ", response)
+    random_directive = re.findall(r"{RANDOM\((\d*.\d*), (\d*.\d*), (\d*)\).*}", response)
     if len(random_directive) == 0:
-        raise Exception("pyvisa-sim: Wrong RANDOM directive, see documentation for correct usage.")
-    response = re.sub(r"RANDOM\((\d*.\d*), (\d*.\d*), (\d*)\) ", "", response)
+        raise Exception(
+            "pyvisa-sim: Wrong RANDOM directive, see documentation for correct usage."
+        )
+    response = re.sub(r"RANDOM\((\d*.\d*), (\d*.\d*), (\d*)\)", "", response)
     min_value, max_value, num_of_results = random_directive[0]
     output_str = list()
     for i in range(int(num_of_results)):
@@ -78,11 +78,11 @@ def random_response(response: str) -> str:
         output_str.append(response.format(value))
     return ", ".join(output_str)
 
-  
+
 class Property(object):
     """A device property"""
 
-    
+
 class Specs(Generic[T]):
     """Specification to validate a property value.
 
@@ -346,7 +346,7 @@ class Component:
         if query in getters:
             name, response = getters[query]
             logger.debug("Found response in getter of %s" % name)
-            
+
             if "RANDOM" in response:
                 response = random_response(response)
             else:
