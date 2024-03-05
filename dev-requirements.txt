@@ -1,9 +1,7 @@
 pyvisa
-black
-flake8
+ruff
 mypy
 types-PyYAML
-isort
 pytest
 sphinx
 sphinx-rtd-theme

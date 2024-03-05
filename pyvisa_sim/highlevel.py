@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 
 """
+
 import random
 from collections import OrderedDict
 from traceback import format_exc
@@ -71,12 +72,10 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
             raise type(e)(msg % format_exc())
 
     @overload
-    def _register(self, obj: "SimVisaLibrary") -> VISARMSession:
-        ...
+    def _register(self, obj: "SimVisaLibrary") -> VISARMSession: ...
 
     @overload
-    def _register(self, obj: Session) -> VISASession:
-        ...
+    def _register(self, obj: Session) -> VISASession: ...
 
     def _register(self, obj):
         """Creates a random but unique session handle for a session object.
