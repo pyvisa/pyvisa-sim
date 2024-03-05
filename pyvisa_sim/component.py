@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 
 """
+
 import enum
 from typing import (
     Dict,
@@ -130,7 +131,7 @@ class Specs(Generic[T]):
 
         self.min = specs_type(specs["min"]) if "min" in specs else None
         self.max = specs_type(specs["max"]) if "max" in specs else None
-        self.valid = set([specs_type(val) for val in specs.get("valid", ())])
+        self.valid = {specs_type(val) for val in specs.get("valid", ())}
 
 
 class Property(Generic[T]):

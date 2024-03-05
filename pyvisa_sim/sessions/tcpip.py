@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 
 """
+
 from pyvisa import constants, rname
 
 from . import session
@@ -23,9 +24,9 @@ class TCPIPInstrumentSession(BaseTCPIPSession):
             self.parsed.board
         )
         self.attrs[constants.ResourceAttribute.tcpip_address] = self.parsed.host_address
-        self.attrs[
-            constants.ResourceAttribute.tcpip_device_name
-        ] = self.parsed.lan_device_name
+        self.attrs[constants.ResourceAttribute.tcpip_device_name] = (
+            self.parsed.lan_device_name
+        )
 
 
 @session.Session.register(constants.InterfaceType.tcpip, "SOCKET")

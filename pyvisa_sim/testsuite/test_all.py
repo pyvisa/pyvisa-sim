@@ -2,6 +2,7 @@
 import logging
 
 import pytest
+
 from pyvisa.errors import VisaIOError
 
 import random

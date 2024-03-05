@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 
 """
+
 import importlib.resources
 import os
 import pathlib
@@ -67,7 +68,7 @@ def _get_pair(dd: Dict[str, str]) -> Tuple[str, str]:
 
 
 def _get_triplet(
-    dd: Dict[str, str]
+    dd: Dict[str, str],
 ) -> Tuple[str, Union[str, Literal[Responses.NO]], Union[str, Literal[Responses.NO]]]:
     """Return a triplet from a dialogue dictionary."""
     return (
