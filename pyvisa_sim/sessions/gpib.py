@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 
 """
+
 from pyvisa import constants, rname
 
 from . import session

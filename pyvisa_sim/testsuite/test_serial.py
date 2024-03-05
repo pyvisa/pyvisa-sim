@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import pyvisa
-
 from pyvisa_sim.sessions import serial
 
 serial.SerialInstrumentSession
