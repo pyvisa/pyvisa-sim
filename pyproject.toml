@@ -36,6 +36,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
     "pyvisa>=1.11.0",
@@ -80,8 +81,21 @@ del namedtuple, _version_info, parts
 __version__ = "{version}"
 """
 
-[tool.black]
-line-length = 88  # Enforce the default value
+[tool.ruff]
+  src = ["src"]
+  extend-exclude = ["pyvisa/thirdparty/*"]
+  line-length = 88
+
+  [tool.ruff.lint]
+    select = ["C", "E", "F", "W", "I", "C90", "RUF"]
+    extend-ignore = ["E501", "RUF012"]
+
+    [tool.ruff.lint.isort]
+      combine-as-imports = true
+      known-first-party = ["pyvisa"]
+
+    [tool.ruff.lint.mccabe]
+      max-complexity = 20
 
 [tool.pytest.ini_options]
 minversion = "6.0"
