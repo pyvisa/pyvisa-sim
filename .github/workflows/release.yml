@@ -1,0 +1,123 @@
+name: Build and upload wheels
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 3'
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build_sdist:
+    name: Build sdist
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get history and tags for SCM versioning to work
+        run: |
+          git fetch --prune --unshallow
+          git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+      - name: Setup Python
+        uses: actions/setup-python@v5
+      - name: Build sdist
+        run: |
+          pip install --upgrade pip
+          pip install wheel build
+          python -m build . -s
+      - name: Test sdist
+        run: |
+          pip install pytest
+          pip install dist/*.tar.gz
+          python -X dev -m pytest --pyargs pyvisa_sim
+      - name: Store artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact
+          path: dist/*
+
+  build_wheel:
+    name: Build wheel
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get history and tags for SCM versioning to work
+        run: |
+          git fetch --prune --unshallow
+          git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+      - name: Setup Python
+        uses: actions/setup-python@v5
+      - name: Build wheels
+        run: |
+          pip install --upgrade pip
+          pip install wheel build
+          python -m build . -w
+      - name: Test wheel
+        run: |
+          pip install pytest
+          pip install dist/*.whl
+          python -X dev -m pytest --pyargs pyvisa_sim
+      - name: Store artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact
+          path: dist/*.whl
+
+  publish:
+    if: github.event_name == 'push'
+    needs: [build_wheel, build_sdist]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: artifact
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.pypi_password }}
+          # To test:
+          # repository_url: https://test.pypi.org/legacy/
+
+  github-release:
+    name: >-
+      Sign the Python 🐍 distribution 📦 with Sigstore
+      and create a GitHub Release
+    runs-on: ubuntu-latest
+    needs:
+    - publish
+
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: artifact
+        path: dist
+    - name: Sign the dists with Sigstore
+      uses: sigstore/gh-action-sigstore-python@v2.1.1
+      with:
+        password: ${{ secrets.pypi_password }}
+        inputs: >-
+          ./dist/*.tar.gz
+          ./dist/*.whl
+    - name: Create GitHub Release
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: >-
+        gh release create
+        '${{ github.ref_name }}'
+        --repo '${{ github.repository }}'
+        --generate-notes
+    - name: Upload artifact signatures to GitHub Release
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: >-
+        gh release upload
+        '${{ github.ref_name }}' dist/**
+        --repo '${{ github.repository }}'
