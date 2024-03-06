@@ -90,5 +90,7 @@ def iter_bytes(
 
 def int_to_byte(val: int) -> bytes:
     return bytes([val])
+
+
 def last_int(val: Sequence[int]) -> int:
     return val[-1]

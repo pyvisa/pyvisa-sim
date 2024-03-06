@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 import logging
+import random
 
 import pytest
 
 from pyvisa.errors import VisaIOError
-
-import random
 
 # We must fix the seed in order to have reproducible random numbers when testing RANDOM functionality!
 random.seed(42)

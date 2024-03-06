@@ -7,6 +7,8 @@
 """
 
 import enum
+import random
+import re
 from typing import (
     Dict,
     Final,
@@ -22,8 +24,6 @@ from typing import (
     overload,
 )
 
-import random
-import re
 import stringparser
 from typing_extensions import TypeAlias  # not needed starting with 3.10
 
@@ -66,22 +66,20 @@ def random_response(response: str) -> str:
     """
     Return a response containing one or more random values.
     """
-    random_directive = re.findall(r"{RANDOM\((\d*.\d*), (\d*.\d*), (\d*)\).*}", response)
+    random_directive = re.findall(
+        r"{RANDOM\((\d*.\d*), (\d*.\d*), (\d*)\).*}", response
+    )
     if len(random_directive) == 0:
         raise Exception(
             "pyvisa-sim: Wrong RANDOM directive, see documentation for correct usage."
         )
     response = re.sub(r"RANDOM\((\d*.\d*), (\d*.\d*), (\d*)\)", "", response)
     min_value, max_value, num_of_results = random_directive[0]
-    output_str = list()
+    output_str = []
     for i in range(int(num_of_results)):
         value = random.uniform(float(min_value), float(max_value))
         output_str.append(response.format(value))
     return ", ".join(output_str)
-
-
-class Property(object):
-    """A device property"""
 
 
 class Specs(Generic[T]):
