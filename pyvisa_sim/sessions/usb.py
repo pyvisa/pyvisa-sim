@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 
 """
+
 from typing import Union
 
 from pyvisa import constants, rname
@@ -19,13 +20,13 @@ class BaseUSBSession(session.MessageBasedSession):
         self.attrs[constants.ResourceAttribute.interface_number] = int(
             self.parsed.board
         )
-        self.attrs[
-            constants.ResourceAttribute.manufacturer_id
-        ] = self.parsed.manufacturer_id
+        self.attrs[constants.ResourceAttribute.manufacturer_id] = (
+            self.parsed.manufacturer_id
+        )
         self.attrs[constants.ResourceAttribute.model_code] = self.parsed.model_code
-        self.attrs[
-            constants.ResourceAttribute.usb_serial_number
-        ] = self.parsed.serial_number
+        self.attrs[constants.ResourceAttribute.usb_serial_number] = (
+            self.parsed.serial_number
+        )
         self.attrs[constants.ResourceAttribute.usb_interface_number] = int(
             self.parsed.board
         )

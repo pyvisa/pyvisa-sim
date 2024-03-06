@@ -5,7 +5,10 @@
 :license: MIT, see LICENSE for more details.
 
 """
+
 import enum
+import random
+import re
 from typing import (
     Dict,
     Final,
@@ -40,13 +43,11 @@ OptionalBytes: TypeAlias = Union[bytes, Literal[Responses.NO]]
 
 
 @overload
-def to_bytes(val: str) -> bytes:
-    ...
+def to_bytes(val: str) -> bytes: ...
 
 
 @overload
-def to_bytes(val: Literal[Responses.NO]) -> Literal[Responses.NO]:
-    ...
+def to_bytes(val: Literal[Responses.NO]) -> Literal[Responses.NO]: ...
 
 
 def to_bytes(val):
@@ -59,6 +60,26 @@ def to_bytes(val):
 
 
 T = TypeVar("T", bound=Union[int, float, str])
+
+
+def random_response(response: str) -> str:
+    """
+    Return a response containing one or more random values.
+    """
+    random_directive = re.findall(
+        r"{RANDOM\((\d*.\d*), (\d*.\d*), (\d*)\).*}", response
+    )
+    if len(random_directive) == 0:
+        raise Exception(
+            "pyvisa-sim: Wrong RANDOM directive, see documentation for correct usage."
+        )
+    response = re.sub(r"RANDOM\((\d*.\d*), (\d*.\d*), (\d*)\)", "", response)
+    min_value, max_value, num_of_results = random_directive[0]
+    output_str = []
+    for i in range(int(num_of_results)):
+        value = random.uniform(float(min_value), float(max_value))
+        output_str.append(response.format(value))
+    return ", ".join(output_str)
 
 
 class Specs(Generic[T]):
@@ -108,7 +129,7 @@ class Specs(Generic[T]):
 
         self.min = specs_type(specs["min"]) if "min" in specs else None
         self.max = specs_type(specs["max"]) if "max" in specs else None
-        self.valid = set([specs_type(val) for val in specs.get("valid", ())])
+        self.valid = {specs_type(val) for val in specs.get("valid", ())}
 
 
 class Property(Generic[T]):
@@ -291,6 +312,9 @@ class Component:
             response = dialogues[query]
             logger.debug("Found response in queries: %s" % repr(response))
 
+            if "RANDOM" in response.decode("utf-8"):
+                response = random_response(response.decode("utf-8")).encode("utf-8")
+
             return response
 
         return None
@@ -321,7 +345,13 @@ class Component:
         if query in getters:
             name, response = getters[query]
             logger.debug("Found response in getter of %s" % name)
-            response = response.format(self._properties[name].get_value())
+
+            if "RANDOM" in response:
+                response = random_response(response)
+            else:
+                value = self._properties[name].get_value()
+                response = response.format(value)
+
             return response.encode("utf-8")
 
         return None

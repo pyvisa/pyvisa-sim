@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 
 """
+
 import time
 from typing import Any, Callable, Dict, Optional, Tuple, Type, TypeVar
 
@@ -34,9 +35,7 @@ class Session:
 
     #: Maps (Interface Type, Resource Class) to Python class encapsulating that resource.
     #: dict[(Interface Type, Resource Class) , Session]
-    _session_classes: Dict[
-        Tuple[constants.InterfaceType, str], Type["Session"]
-    ] = dict()
+    _session_classes: Dict[Tuple[constants.InterfaceType, str], Type["Session"]] = {}
 
     #: Session handler for the resource manager.
     session_type: Tuple[constants.InterfaceType, str]

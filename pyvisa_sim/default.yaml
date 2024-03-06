@@ -241,6 +241,46 @@ devices:
           min: 1
           max: 6
           type: float
+  device 5:
+    eom:
+      ASRL INSTR:
+        q: "\r\n"
+        r: "\n"
+      USB INSTR:
+        q: "\n"
+        r: "\n"
+      TCPIP INSTR:
+        q: "\n"
+        r: "\n"
+      GPIB INSTR:
+        q: "\n"
+        r: "\n"
+    dialogues:
+      - q: ":READ?"
+        r: "{RANDOM(0, 10.5, 1):.2f}"
+      - q: ":SCAN?"
+        r: "{RANDOM(0, 10.5, 5):.2f}"
+      - q: ":BAD:SCAN:OUTSIDE?"
+        r: "RANDOM(0, 10.5, 5){:.2f}"
+      - q: ":BAD:SCAN:INSIDE?"
+        r: "{RANDOM(0, 10.5):.2f}"
+    error:
+      error_queue:
+        - q: ':SYST:ERR?'
+          default: '0, No Error'
+          command_error: '1, Command error'
+    properties:
+      voltage:
+        default: 1.0
+        getter:
+          q: ":VOLT:IMM:AMPL?"
+          r: "{RANDOM(-5, 5, 1):.2f}"
+        setter:
+          q: ":VOLT:IMM:AMPL {:.3f}"
+        specs:
+          min: 1
+          max: 6
+          type: float
 
 resources:
   ASRL1::INSTR:
@@ -277,5 +317,14 @@ resources:
     device: device 4
   GPIB::4::INSTR:
     device: device 4
+  ASRL5::INSTR:
+    device: device 5
+  USB::0x1111::0x2222::0x5555::INSTR:
+    device: device 5
+  TCPIP::localhost:5555::INSTR:
+    device: device 5
+  GPIB::5::INSTR:
+    device: device 5
   USB::0x1111::0x2222::0x4445::RAW:
     device: device 1
+

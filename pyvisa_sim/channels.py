@@ -5,6 +5,7 @@
 :license: MIT, see LICENSE for more details.
 
 """
+
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeVar
 

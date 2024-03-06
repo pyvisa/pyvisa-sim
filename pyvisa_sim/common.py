@@ -8,8 +8,9 @@ Do not edit here.
 :license: MIT, see LICENSE for more details.
 
 """
+
 import logging
-from typing import Callable, Iterator, Optional, Sequence
+from typing import Iterator, Optional, Sequence
 
 from pyvisa import logger
 
@@ -87,5 +88,9 @@ def iter_bytes(
             raise ValueError(f"Unknown 'send_end' value '{send_end}'")
 
 
-int_to_byte: Callable[[int], bytes] = lambda val: bytes([val])
-last_int: Callable[[Sequence[int]], int] = lambda val: val[-1]
+def int_to_byte(val: int) -> bytes:
+    return bytes([val])
+
+
+def last_int(val: Sequence[int]) -> int:
+    return val[-1]
