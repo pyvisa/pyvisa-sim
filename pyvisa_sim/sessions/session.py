@@ -11,7 +11,7 @@ from typing import Any, Callable, Dict, Optional, Tuple, Type, TypeVar
 
 from pyvisa import attributes, constants, rname, typing
 
-from ..common import logger
+from ..common import int_to_byte, logger
 from ..devices import Device
 
 S = TypeVar("S", bound="Session")
@@ -208,30 +208,70 @@ class MessageBasedSession(Session):
     """Base class for Message-Based sessions that support ``read`` and ``write`` methods."""
 
     def read(self, count: int) -> Tuple[bytes, constants.StatusCode]:
-        end_char, _ = self.get_attribute(constants.ResourceAttribute.termchar)
-        enabled, _ = self.get_attribute(constants.ResourceAttribute.termchar_enabled)
         timeout, _ = self.get_attribute(constants.ResourceAttribute.timeout_value)
         timeout /= 1000
+
+        suppress_end_enabled, _ = self.get_attribute(
+            constants.ResourceAttribute.suppress_end_enabled
+        )
+        termchar, _ = self.get_attribute(constants.ResourceAttribute.termchar)
+        termchar = int_to_byte(termchar)
+        termchar_enabled, _ = self.get_attribute(
+            constants.ResourceAttribute.termchar_enabled
+        )
+
+        interface_type, _ = self.get_attribute(
+            constants.ResourceAttribute.interface_type
+        )
+        is_asrl = interface_type == constants.InterfaceType.asrl
+        if is_asrl:
+            asrl_end_in, _ = self.get_attribute(constants.ResourceAttribute.asrl_end_in)
+            asrl_last_bit, _ = self.get_attribute(
+                constants.ResourceAttribute.asrl_data_bits
+            )
+            if asrl_last_bit:
+                asrl_last_bit_mask = 1 << (asrl_last_bit - 1)
 
         start = time.monotonic()
 
         out = b""
 
         while time.monotonic() - start <= timeout:
-            last = self.device.read()
-
-            if not last:
-                time.sleep(0.01)
-                continue
+            last, end_indicator = self.device.read()
 
             out += last
 
-            if enabled:
-                if len(out) > 0 and out[-1] == end_char:
-                    return out, constants.StatusCode.success_termination_character_read
+            # N.B.: References here are to VPP-4.3 rev. 7.2.1
+            # (https://www.ivifoundation.org/downloads/VISA/vpp43_2024-01-04.pdf).
 
-            if len(out) == count:
+            is_termchar = last == termchar
+
+            if is_asrl:
+                end_indicator = False
+                if asrl_end_in == constants.SerialTermination.none:
+                    # Rule 6.1.6.
+                    end_indicator = False
+                elif (
+                    asrl_end_in == constants.SerialTermination.termination_char
+                    and is_termchar
+                ) or (
+                    asrl_end_in == constants.SerialTermination.last_bit
+                    and out[-1] & asrl_last_bit_mask
+                ):
+                    # Rule 6.1.7.
+                    end_indicator = True
+
+            if end_indicator and not suppress_end_enabled:
+                # Rule 6.1.1, Rule 6.1.4, Observation 6.1.3.
+                return out, constants.StatusCode.success
+            elif is_termchar and termchar_enabled:
+                # Rule 6.1.2, Rule 6.1.5, Observation 6.1.4.
+                return out, constants.StatusCode.success_termination_character_read
+            elif len(out) == count:
+                # Rule 6.1.3.
                 return out, constants.StatusCode.success_max_count_read
+
+            time.sleep(0.01)
         else:
             return out, constants.StatusCode.error_timeout
 

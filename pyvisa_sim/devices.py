@@ -6,12 +6,12 @@
 
 """
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Deque, Dict, List, Optional, Tuple, Union
 
 from pyvisa import constants, rname
 
 from .channels import Channels
-from .common import logger
+from .common import int_to_byte, logger
 from .component import Component, NoResponse, OptionalBytes, to_bytes
 
 
@@ -134,7 +134,7 @@ class Device(Component):
         self._status_registers = {}
         self._error_map = {}
         self._eoms = {}
-        self._output_buffer = bytearray()
+        self._output_buffers = Deque()
         self._input_buffer = bytearray()
         self._error_queues = {}
 
@@ -251,19 +251,26 @@ class Device(Component):
                     assert response is not None
 
                 if response is not NoResponse:
-                    self._output_buffer.extend(response)
-                    self._output_buffer.extend(eom)
+                    self._output_buffers.append(bytearray(response) + eom)
 
         finally:
             self._input_buffer = bytearray()
 
-    def read(self) -> bytes:
-        """Return a single byte from the output buffer"""
-        if self._output_buffer:
-            b, self._output_buffer = (self._output_buffer[0:1], self._output_buffer[1:])
-            return b
+    def read(self) -> Tuple[bytes, bool]:
+        """
+        Return a single byte from the output buffer and whether it is accompanied by an
+        END indicator.
+        """
+        if not self._output_buffers:
+            return b"", False
 
-        return b""
+        output_buffer = self._output_buffers[0]
+        b = int_to_byte(output_buffer.pop(0))
+        if output_buffer:
+            return b, False
+        else:
+            self._output_buffers.popleft()
+            return b, True
 
     # --- Private API
 
@@ -293,8 +300,8 @@ class Device(Component):
     #: TYPE CLASS -> (query termination, response termination)
     _eoms: Dict[Tuple[constants.InterfaceType, str], Tuple[bytes, bytes]]
 
-    #: Buffer in which the user can read
-    _output_buffer: bytearray
+    #: Deque of buffers in which the user can read
+    _output_buffers: Deque[bytearray]
 
     #: Buffer in which the user can write
     _input_buffer: bytearray
