@@ -234,7 +234,7 @@ class MessageBasedSession(Session):
 
         start = time.monotonic()
 
-        out = b""
+        out = bytearray()
 
         while time.monotonic() - start <= timeout:
             last, end_indicator = self.device.read()
