@@ -236,8 +236,8 @@ class MessageBasedSession(Session):
 
         out = bytearray()
 
-        while time.monotonic() - start <= timeout:
-            last, end_indicator = self.device.read()
+        while (timeout_remaining := (timeout - (time.monotonic() - start))) >= 0:
+            last, end_indicator = self.device.read(timeout=timeout_remaining)
 
             out += last
 
@@ -270,10 +270,6 @@ class MessageBasedSession(Session):
             elif len(out) == count:
                 # Rule 6.1.3.
                 return out, constants.StatusCode.success_max_count_read
-
-            # Busy-wait only if the device's output buffer was empty.
-            if not last:
-                time.sleep(0.01)
         else:
             return out, constants.StatusCode.error_timeout
 
