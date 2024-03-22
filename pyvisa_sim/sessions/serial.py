@@ -6,7 +6,6 @@
 
 """
 
-import time
 from typing import Tuple
 
 from pyvisa import constants, rname
@@ -23,55 +22,6 @@ class SerialInstrumentSession(session.MessageBasedSession):
         self.attrs[constants.ResourceAttribute.interface_number] = int(
             self.parsed.board
         )
-
-    def read(self, count: int) -> Tuple[bytes, constants.StatusCode]:
-        # TODO: Implement VI_ATTR_SUPPRESS_END_EN
-        end_in, _ = self.get_attribute(constants.ResourceAttribute.asrl_end_in)
-
-        end_char, _ = self.get_attribute(constants.ResourceAttribute.termchar)
-        end_char = common.int_to_byte(end_char)
-
-        enabled, _ = self.get_attribute(constants.ResourceAttribute.termchar_enabled)
-        timeout, _ = self.get_attribute(constants.ResourceAttribute.timeout_value)
-        timeout /= 1000
-
-        last_bit, _ = self.get_attribute(constants.ResourceAttribute.asrl_data_bits)
-        mask = 1 << (last_bit - 1)
-        start = time.monotonic()
-
-        out = b""
-
-        while time.monotonic() - start <= timeout:
-            last = self.device.read()
-
-            if not last:
-                time.sleep(0.01)
-                continue
-
-            out += last
-
-            if end_in == constants.SerialTermination.termination_char:
-                if out[-1:] == end_char:
-                    return out, constants.StatusCode.success_termination_character_read
-
-            elif end_in == constants.SerialTermination.last_bit:
-                if common.last_int(out) & mask:
-                    return out, constants.StatusCode.success
-
-                if enabled and out[-1:] == end_char:
-                    return out, constants.StatusCode.success_termination_character_read
-
-            elif end_in == constants.SerialTermination.none:
-                if out[-1:] == end_char:
-                    return out, constants.StatusCode.success_termination_character_read
-
-            else:
-                raise ValueError("Unknown value for VI_ATTR_ASRL_END_IN")
-
-            if len(out) == count:
-                return out, constants.StatusCode.success_max_count_read
-        else:
-            return out, constants.StatusCode.error_timeout
 
     def write(self, data: bytes) -> Tuple[int, constants.StatusCode]:
         send_end, _ = self.get_attribute(constants.ResourceAttribute.send_end_enabled)
