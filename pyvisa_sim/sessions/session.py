@@ -271,7 +271,9 @@ class MessageBasedSession(Session):
                 # Rule 6.1.3.
                 return out, constants.StatusCode.success_max_count_read
 
-            time.sleep(0.01)
+            # Busy-wait only if the device's output buffer was empty.
+            if not last:
+                time.sleep(0.01)
         else:
             return out, constants.StatusCode.error_timeout
 
