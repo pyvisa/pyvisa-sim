@@ -59,7 +59,7 @@ def to_bytes(val):
     return val.encode()
 
 
-T = TypeVar("T", bound=Union[int, float, str])
+T = TypeVar("T", int, float, str)
 
 
 def random_response(response: str) -> str:
@@ -87,13 +87,13 @@ class Specs(Generic[T]):
 
     Parameters
     ----------
-    specs : DIct[str, str]
+    specs : Dict[str, str]
         Specs as a dictionary as extracted from the yaml config.
 
     """
 
     #: Value that lead to some validation are int, float, str
-    type: Optional[Type[T]]
+    type: Type[T]
 
     #: Minimal admissible value
     min: Optional[T]
@@ -112,12 +112,12 @@ class Specs(Generic[T]):
         if "type" not in specs:
             raise ValueError("No property type was specified.")
 
-        specs_type = None
+        specs_type: Type[T] | None = None
         t = specs["type"]
         if t:
             for key, val in (("float", float), ("int", int), ("str", str)):
                 if t == key:
-                    specs_type = val
+                    specs_type = val  # type: ignore
                     break
 
         if specs_type is None:
@@ -127,9 +127,9 @@ class Specs(Generic[T]):
             )
         self.type = specs_type
 
-        self.min = specs_type(specs["min"]) if "min" in specs else None
-        self.max = specs_type(specs["max"]) if "max" in specs else None
-        self.valid = {specs_type(val) for val in specs.get("valid", ())}
+        self.min = self.type(specs["min"]) if "min" in specs else None
+        self.max = self.type(specs["max"]) if "max" in specs else None
+        self.valid = {self.type(val) for val in specs.get("valid", ())}
 
 
 class Property(Generic[T]):
