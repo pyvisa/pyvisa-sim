@@ -1,6 +1,11 @@
 PyVISA-sim Changelog
 ====================
 
+Unreleased
+----------
+- Fixed `SimVisaLibrary.read` violating the `viRead` specification in various ways. This
+  fixed issue #45 and other bugs. PR #98
+
 0.6.0 (2023-11-27)
 ------------------
 

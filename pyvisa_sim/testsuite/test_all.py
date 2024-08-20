@@ -84,6 +84,9 @@ def test_instruments(resource, resource_manager):
 
     assert_instrument_response(inst, "!CAL", "OK")
 
+    with inst.read_termination_context(""):
+        assert_instrument_response(inst, "?IDN", "LSG Serial #1234\n")
+
     # Errors
 
     assert_instrument_response(inst, "!WVF 23", "ERROR")
