@@ -6,7 +6,8 @@
 
 """
 
-from typing import Deque, Dict, List, Optional, Tuple, Union
+from threading import Lock
+from typing import Deque, Dict, Final, List, Optional, Tuple, Union
 
 from pyvisa import constants, rname
 
@@ -54,6 +55,51 @@ class StatusRegister:
 
     #: Current value of the register.
     _value: int
+
+
+class OutputQueue:
+    """Store output in a FIFO queue."""
+
+    # N.B.: We don't use a `deque[tuple[bytes, bool]]` or `SimpleQueue[tuple[bytes,
+    # bool]]` for this as
+    # *   It would require splitting each bytearray message and pushing (length-1 bytes
+    #     object, bool) to the deque for each byte in the message.
+    # *   We would still need a separate lock, as they do not have thread-safe `.extend`
+    #     methods.
+
+    def __init__(self) -> None:
+        self._message_buffers: Final[Deque[bytearray]] = Deque()
+        self._lock: Final = Lock()
+        self._readable = False
+
+    def append_message(self, message: bytearray) -> None:
+        """Append a message to the output queue."""
+        with self._lock:
+            self._message_buffers.append(message)
+            self._readable = True
+
+    def read(self, timeout: float) -> Tuple[bytes, bool]:
+        """
+        Return a single byte from the output queue and whether it is accompanied by an
+        END indicator.
+        """
+        if not self._lock.acquire(timeout=timeout):
+            return b"", False
+        try:
+            if not self._readable:
+                return b"", False
+
+            current_message_buffer = self._message_buffers[0]
+            b = int_to_byte(current_message_buffer.pop(0))
+            if current_message_buffer:
+                return b, False
+            else:
+                self._message_buffers.popleft()
+                if not self._message_buffers:
+                    self._readable = False
+                return b, True
+        finally:
+            self._lock.release()
 
 
 class ErrorQueue:
@@ -134,7 +180,7 @@ class Device(Component):
         self._status_registers = {}
         self._error_map = {}
         self._eoms = {}
-        self._output_buffers = Deque()
+        self._output_queue = OutputQueue()
         self._input_buffer = bytearray()
         self._error_queues = {}
 
@@ -251,26 +297,17 @@ class Device(Component):
                     assert response is not None
 
                 if response is not NoResponse:
-                    self._output_buffers.append(bytearray(response) + eom)
+                    self._output_queue.append_message(bytearray(response) + eom)
 
         finally:
             self._input_buffer = bytearray()
 
-    def read(self) -> Tuple[bytes, bool]:
+    def read(self, timeout: float) -> Tuple[bytes, bool]:
         """
         Return a single byte from the output buffer and whether it is accompanied by an
         END indicator.
         """
-        if not self._output_buffers:
-            return b"", False
-
-        output_buffer = self._output_buffers[0]
-        b = int_to_byte(output_buffer.pop(0))
-        if output_buffer:
-            return b, False
-        else:
-            self._output_buffers.popleft()
-            return b, True
+        return self._output_queue.read(timeout=timeout)
 
     # --- Private API
 
@@ -300,8 +337,8 @@ class Device(Component):
     #: TYPE CLASS -> (query termination, response termination)
     _eoms: Dict[Tuple[constants.InterfaceType, str], Tuple[bytes, bytes]]
 
-    #: Deque of buffers in which the user can read
-    _output_buffers: Deque[bytearray]
+    #: Queue in which the user can read
+    _output_buffer: OutputQueue
 
     #: Buffer in which the user can write
     _input_buffer: bytearray

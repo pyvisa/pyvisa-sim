@@ -2,7 +2,7 @@
 name = "PyVISA-sim"
 description = "Simulated backend for PyVISA implementing TCPIP, GPIB, RS232, and USB resources"
 readme = "README.rst"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = {file = "LICENSE.txt"}
 authors = [
   {name = "Hernan E. Grecco", email = "hernan.grecco@gmail.com"},
