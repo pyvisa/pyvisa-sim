@@ -122,8 +122,7 @@ class Specs(Generic[T]):
 
         if specs_type is None:
             raise ValueError(
-                f"Invalid property type '{t}', valid types are: "
-                "'int', 'float', 'str'"
+                f"Invalid property type '{t}', valid types are: 'int', 'float', 'str'"
             )
         self.type = specs_type
 
