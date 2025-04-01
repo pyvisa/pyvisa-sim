@@ -33,7 +33,7 @@ jobs:
       - name: Store artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: artifact
+          name: cibw-sdist
           path: dist/*
 
   build_wheel:
@@ -61,7 +61,7 @@ jobs:
       - name: Store artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: artifact
+          name: cibw-wheels
           path: dist/*.whl
 
   publish:
@@ -71,8 +71,9 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: artifact
+          pattern: cibw-*
           path: dist
+          merge-multiple: true
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
