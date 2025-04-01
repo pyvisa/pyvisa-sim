@@ -1,16 +1,21 @@
 PyVISA-sim Changelog
 ====================
 
-Unreleased
-----------
-- Fixed `SimVisaLibrary.read` violating the `viRead` specification in various ways. This
+0.7.0 (01-04-2025)
+------------------
+
+- add support for Python 3.13 PR #124
+- drop support for Python 3.8 and 3.9 PR #124
+- add support for RANDOM directive PR #96
+  RANDOM allows to return 1 or more random values between a min and a max value
+- fixed `SimVisaLibrary.read` violating the `viRead` specification in various ways. This
   fixed issue #45 and other bugs. PR #98
 
 0.6.0 (2023-11-27)
 ------------------
 
-- Fixed debug logging a single character at a time. PR #79
-- Fixed issue with `common.iter_bytes` where the masked bits would be incorrect.
+- fixed debug logging a single character at a time. PR #79
+- fixed issue with `common.iter_bytes` where the masked bits would be incorrect.
   PR #81
 
 0.5.1 (2022-09-08)
