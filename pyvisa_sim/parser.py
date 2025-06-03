@@ -9,7 +9,6 @@
 import importlib.resources
 import os
 import pathlib
-from contextlib import closing
 from io import StringIO, open
 from traceback import format_exc
 from typing import (
@@ -26,6 +25,8 @@ from typing import (
 )
 
 import yaml
+
+from pyvisa.rname import to_canonical_name
 
 from .channels import Channels
 from .component import Component, NoResponse, Responses
@@ -110,8 +111,7 @@ def _load(content_or_fp: Union[str, bytes, TextIO, BinaryIO]) -> Dict[str, Any]:
 
 def parse_resource(name: str) -> Dict[str, Any]:
     """Parse a resource file."""
-    with closing(importlib.resources.open_binary("pyvisa_sim", name)) as fp:
-        rbytes = fp.read()
+    rbytes = importlib.resources.files("pyvisa_sim").joinpath(name).read_bytes()
 
     return _load(StringIO(rbytes.decode("utf-8")))
 
@@ -411,7 +411,8 @@ def get_devices(filename: Union[str, pathlib.Path], bundled: bool) -> Devices:
         )
 
         devices.add_device(
-            resource_name, get_device(device_name, dd, loader, resource_dict)
+            to_canonical_name(resource_name),
+            get_device(device_name, dd, loader, resource_dict),
         )
 
     return devices
