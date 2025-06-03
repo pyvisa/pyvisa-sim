@@ -379,7 +379,7 @@ class Devices:
 
         device.resource_name = resource_name
 
-        self._internal[device.resource_name] = device
+        self._internal[resource_name] = device
 
     def __getitem__(self, item: str) -> Device:
         return self._internal[item]
