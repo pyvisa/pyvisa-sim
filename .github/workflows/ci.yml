@@ -36,7 +36,7 @@ jobs:
           pip install -r dev-requirements.txt
       - name: Format
         run: |
-          ruff format pyvisa_sim;
+          ruff format pyvisa_sim --check;
       - name: Lint
         if: always()
         run: |
