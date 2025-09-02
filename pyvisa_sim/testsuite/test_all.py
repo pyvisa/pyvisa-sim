@@ -6,7 +6,8 @@ import pytest
 
 from pyvisa.errors import VisaIOError
 
-# We must fix the seed in order to have reproducible random numbers when testing RANDOM functionality!
+# We must fix the seed in order to have reproducible random numbers when
+# testing RANDOM functionality!
 random.seed(42)
 
 
@@ -61,6 +62,8 @@ def test_instruments(resource, resource_manager):
     )
 
     assert_instrument_response(inst, "?IDN", "LSG Serial #1234")
+    written = inst.write("*RST")
+    assert written == 4 + len(inst.write_termination)
 
     assert_instrument_response(inst, "?FREQ", "100.00")
     assert_instrument_response(inst, "!FREQ 10.3", "OK")
