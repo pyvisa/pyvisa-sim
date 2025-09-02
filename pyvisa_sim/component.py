@@ -311,7 +311,7 @@ class Component:
             response = dialogues[query]
             logger.debug("Found response in queries: %s" % repr(response))
 
-            if "RANDOM" in response.decode("utf-8"):
+            if response is not NoResponse and "RANDOM" in response.decode("utf-8"):
                 response = random_response(response.decode("utf-8")).encode("utf-8")
 
             return response
