@@ -23,6 +23,7 @@ devices:
         r: "LSG Serial #1234"
       - q: "!CAL"
         r: OK
+      - q: "*RST"
     properties:
       frequency:
         default: 100.0
@@ -100,6 +101,7 @@ devices:
     dialogues:
       - q: "*IDN?"
         r: "SCPI,MOCK,VERSION_1.0"
+      - q: "*RST"
     error:
       status_register:
         - q: "*ESR?"
@@ -165,6 +167,7 @@ devices:
     dialogues:
       - q: "*IDN?"
         r: "SCPI,MOCK,VERSION_1.0"
+      - q: "*RST"
     error:
       response:
         command_error: "INVALID_COMMAND"
@@ -224,6 +227,7 @@ devices:
     dialogues:
       - q: "*IDN?"
         r: "SCPI,MOCK,VERSION_1.0"
+      - q: "*RST"
     error:
       error_queue:
         - q: ':SYST:ERR?'
@@ -264,6 +268,7 @@ devices:
         r: "RANDOM(0, 10.5, 5){:.2f}"
       - q: ":BAD:SCAN:INSIDE?"
         r: "{RANDOM(0, 10.5):.2f}"
+      - q: "*RST"
     error:
       error_queue:
         - q: ':SYST:ERR?'
