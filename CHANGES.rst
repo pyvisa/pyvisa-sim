@@ -1,7 +1,7 @@
 PyVISA-sim Changelog
 ====================
 
-0.7.1 (unreleased)
+0.7.1 (04-09-2025)
 ------------------
 
 - fix support for dialogues without responses PR #168
