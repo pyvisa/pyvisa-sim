@@ -98,8 +98,9 @@ jobs:
     - name: Download all the dists
       uses: actions/download-artifact@v5
       with:
-        name: artifact
+        pattern: cibw-*
         path: dist
+        merge-multiple: true
     - name: Sign the dists with Sigstore
       uses: sigstore/gh-action-sigstore-python@v3.0.1
       with:
