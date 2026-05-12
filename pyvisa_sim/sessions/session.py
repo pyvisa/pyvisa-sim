@@ -207,7 +207,7 @@ class Session:
 class MessageBasedSession(Session):
     """Base class for Message-Based sessions that support ``read`` and ``write`` methods."""
 
-    def read(self, count: int) -> Tuple[bytes, constants.StatusCode]:
+    def read(self, count: int) -> Tuple[bytes | bytearray, constants.StatusCode]:
         timeout, _ = self.get_attribute(constants.ResourceAttribute.timeout_value)
         timeout /= 1000
 

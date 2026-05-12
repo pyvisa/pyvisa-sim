@@ -253,7 +253,7 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
             chunk, status = sess.read(count)  # type: ignore
             if status == constants.StatusCode.error_timeout:
                 raise errors.VisaIOError(constants.VI_ERROR_TMO)
-            return chunk, status
+            return bytes(chunk), status
         except AttributeError:
             return b"", constants.StatusCode.error_nonsupported_operation
 
