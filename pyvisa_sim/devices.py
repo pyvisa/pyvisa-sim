@@ -227,6 +227,48 @@ class Device(Component):
             to_bytes(response_termination),
         )
 
+    def _process_one_query_in_input_buffer(self, the_bytes: bytes) -> int:
+        """Process one valid query in the input buffer.
+
+        Searches for a valid query (according to the yaml file) from the
+        beginning of the given bytes. If a valid query is found, the matching
+        dialogue response is added to the device output buffer, and the matched
+        query is removed from the input buffer. Everything before the matched
+        query is also removed from the input buffer.
+
+        Returns
+        -------
+
+        int: The number of bytes removed from the input buffer. It may
+        be 0, in which case no query matching a dialogue was found.
+
+        """
+        # TODO match to other things?
+        # self._status_registers
+        # self._error_queues
+        # all_keys = [d.keys() for d in [ self._dialogues, self._status_registers, self._error_queues ] ]
+        for query in self._dialogues:
+            # try the next key if this one not found
+            if (query_index := the_bytes.find(query)) == -1:
+                continue
+
+            if (
+                response := self._match(
+                    the_bytes[query_index : query_index + len(query)]
+                )
+            ) not in {
+                None,
+                NoResponse,
+            }:  # is not NoResponse; None case is covered by the continue statement
+                self._output_buffers.append(bytearray(response))
+
+            # to keep the garbage bytes:
+            # del self._input_buffer[query_index:query_index+len(query)]
+            del self._input_buffer[0 : query_index + len(query)]
+            return len(query)
+
+        return 0
+
     def write(self, data: bytes) -> None:
         """Write data into the device input buffer."""
         logger.debug("Writing into device input buffer: %r" % data)
@@ -239,22 +281,45 @@ class Device(Component):
         if not self._input_buffer.endswith(self._query_eom):
             return
 
-        try:
-            message = bytes(self._input_buffer[:-le])
-            queries = message.split(self.delimiter) if self.delimiter else [message]
-            for query in queries:
-                response = self._match(query)
-                eom = self._response_eom
+        # TODO: I feel like a simplifying refactor can be done
 
-                if response is None:
-                    response = self.error_response("command_error")
-                    assert response is not None
+        # handle the no write termination case separately. importantly, the
+        # input buffer is not cleared if no valid message is found. once a
+        # valid message is found (starting from the end of the buffer), it and
+        # only it is removed from the input buffer
+        if self._query_eom == b"":
+            message = bytes(self._input_buffer)
+            response = self._match(message)
 
-                if response is not NoResponse:
-                    self._output_buffers.append(bytearray(response) + eom)
+            # initial dialogue lookup failed
+            if response is None:
+                # incrementally scan for a match starting from the end of the buffer
+                while self._process_one_query_in_input_buffer(message) != 0:
+                    message = bytes(self._input_buffer)
 
-        finally:
-            self._input_buffer = bytearray()
+            # initial dialogue lookup succeeded
+            elif response is not NoResponse:
+                self._output_buffers.append(bytearray(response))
+                del self._input_buffer[-len(message) :]
+
+        else:
+            try:
+                message = bytes(self._input_buffer[:-le])
+
+                queries = message.split(self.delimiter) if self.delimiter else [message]
+                for query in queries:
+                    response = self._match(query)
+                    eom = self._response_eom
+
+                    if response is None:
+                        response = self.error_response("command_error")
+                        assert response is not None
+
+                    if response is not NoResponse:
+                        self._output_buffers.append(bytearray(response) + eom)
+
+            finally:
+                self._input_buffer = bytearray()
 
     def read(self) -> Tuple[bytes, bool]:
         """

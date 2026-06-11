@@ -1,0 +1,18 @@
+spec: "1.1"
+devices:
+  device 1:
+    eom:
+      ASRL INSTR:
+        q: ""
+        r: ""
+    dialogues:
+      - q: "*IDN?"
+        r: "SCPI,MOCK,VERSION_1.0"
+      - q: "*ESR?"
+        r: "32"
+      - q: "*STB?"
+        r: "255"
+
+resources:
+  ASRL1::INSTR:
+    device: device 1
