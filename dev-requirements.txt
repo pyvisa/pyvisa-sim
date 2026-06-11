@@ -3,5 +3,6 @@ ruff
 mypy
 types-PyYAML
 pytest
+pytest-dependency
 sphinx
 sphinx-rtd-theme

@@ -365,3 +365,37 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
     def discard_events(self, session, event_type, mechanism):
         # TODO: implement this for GPIB finalization
         pass
+
+    def flush(self, session: VISASession, mask: constants.BufferOperation):
+        try:
+            sess = self.sessions[session]
+        except KeyError:
+            return 0, constants.StatusCode.error_invalid_object
+
+        if mask == constants.BufferOperation.discard_read_buffer:
+            # TODO END indicator
+            raise NotImplementedError("try discard_read_buffer_no_io instead")
+
+        elif mask in {
+            constants.BufferOperation.discard_read_buffer_no_io,
+            constants.BufferOperation.discard_receive_buffer,
+            constants.BufferOperation.discard_receive_buffer2,
+        }:
+            sess.device._output_buffers.clear()
+
+        elif mask in {
+            constants.BufferOperation.discard_write_buffer,
+            constants.BufferOperation.discard_transmit_buffer,
+        }:
+            del sess.device._input_buffer[0:]
+
+        elif mask in {
+            constants.BufferOperation.flush_write_buffer,
+            constants.BufferOperation.flush_transmit_buffer,
+        }:
+            sess.device.write(bytes(sess.device._input_buffer))
+
+        else:
+            raise ValueError(f"unrecognized buffer operation {mask}")
+
+        return constants.StatusCode.success
