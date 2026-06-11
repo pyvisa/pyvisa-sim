@@ -18,3 +18,13 @@ def channels():
     rm = pyvisa.ResourceManager(path + "@sim")
     yield rm
     rm.close()
+
+
+@pytest.fixture
+def no_termination_chars_resource_manager():
+    path = os.path.join(
+        os.path.dirname(__file__), "fixtures", "no_termination_chars.yaml"
+    )
+    rm = pyvisa.ResourceManager(path + "@sim")
+    yield rm
+    rm.close()
