@@ -42,6 +42,30 @@ OptionalStr: TypeAlias = Union[str, Literal[Responses.NO]]
 OptionalBytes: TypeAlias = Union[bytes, Literal[Responses.NO]]
 
 
+def _single_to_bytes(val: str) -> bytes:
+    """Encodes a string with UTF-8, handling a single BYTES(...) directive.
+
+    If the string is "BYTES(...)" where "..." is a valid hexadecimal string in
+    the format expected by bytes.fromhex(), encoding is skipped and the raw
+    bytes inside the BYTES directive are returned instead.
+
+    Examples
+    --------
+
+    The string "abcdefg" will be encoded to b"abcdefg".
+
+    The string "BYTES(014e80)" will be encoded to b"\x01\x4e\x80".
+
+    The string "abBYTES(014e80)cd" will be encoded to b"abBYTES(014e80)cd".
+
+    The string "BYTES(01)BYTES(02)" will be encoded to b"BYTES(01)BYTES(02)".
+
+    """
+    if match := re.fullmatch(r"BYTES\(([a-fA-f0-9 ]+)\)", val):
+        return bytes.fromhex(match[1])
+    return val.encode()
+
+
 @overload
 def to_bytes(val: str) -> bytes: ...
 
@@ -51,12 +75,31 @@ def to_bytes(val: Literal[Responses.NO]) -> Literal[Responses.NO]: ...
 
 
 def to_bytes(val):
-    """Takes a text message or NoResponse and encode it."""
+    """Takes a text message or NoResponse and encode it.
+
+    Any substrings of the form "BYTES(...)" with "..." being a valid
+    hexadecimal string in the format expected by bytes.fromhex() will be
+    replaced with the bytes inside the BYTES directive.
+
+    Examples
+    --------
+
+    The string "abcdefg" will be encoded to b"abcdefg".
+
+    The string "BYTES(014e80)" will be encoded to b"\x01\x4e\x80".
+
+    The string "abBYTES(014e80)cd" will be encoded to b"ab\x01\x4e\x80cd".
+
+    The string "BYTES(01)BYTES(02)" will be encoded to b"\x01\x02".
+
+    """
     if val is NoResponse:
         return val
 
     val = val.replace("\\r", "\r").replace("\\n", "\n")
-    return val.encode()
+
+    partitioned_string = re.split(r"(BYTES\([a-fA-F0-9 ]+\))", val)
+    return b"".join(map(_single_to_bytes, partitioned_string))
 
 
 T = TypeVar("T", int, float, str)
