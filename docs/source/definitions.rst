@@ -179,7 +179,7 @@ You can also specify the valid values, for example:
 Notice that even if the type is a float, the communication is done with strings.
 
 
-raw bytes in dialogues
+Raw bytes in dialogues
 ----------------------
 
 Sometimes instruments use a non-ASCII communication protocol. PyVISA-sim
@@ -187,24 +187,16 @@ supports inserting raw bytes into dialog query and response definitions for
 this situation.
 
 In a query/response definition, substrings of the form ``BYTES(...)`` are
-replaced with the raw bytes specified inside the parenthesis. The syntax for
-the raw bytes is the same as that accepted by python's ``bytes.fromhex()``
-method; that is to say, the allowed characters are 0–9, a–z, A–Z, and
-whitespace, and there must be an even number of non-whitespace characters.
-
-Here are some examples of how the ``BYTES()`` directive is parsed:
-
-* ``"abcdefg"`` -> ``b"abcdefg"``
-* ``"BYTES()"`` -> ``b"BYTES()"``
-* ``"BYTES(4c)"`` -> ``b"\x4c"``
-* ``"BYTES(01)BYTES(02)"`` -> ``b"\x01\x02"``
-* ``"abBYTES(cd)ef"`` -> ``b"ab\xcdef"``
+replaced with the raw bytes specified inside the parenthesis. The bytes inside
+the directive may be specified using YAML's escaped 8-bit unicode characters
+using the ``\x`` escape sequence. For instance, the byte ``0b10101010`` is
+represented as ``\xaa``. See below for example usage.
 
 .. code-block:: yaml
 
    dialogues:
-     - q: "BYTES(aa 55 00 02 08 01 f4)"
-       r: "BYTES(aa 55 00 02 08 01 f4)"
+     - q: "BYTES(\xaa\x55\x00\x02\x08\x01\xf4)"
+       r: "BYTES(\xaa\x55\x00\x02\x08\x01\xf4)"
 
 randomized output
 -----------------

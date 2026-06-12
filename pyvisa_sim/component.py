@@ -45,24 +45,27 @@ OptionalBytes: TypeAlias = Union[bytes, Literal[Responses.NO]]
 def _single_to_bytes(val: str) -> bytes:
     """Encodes a string with UTF-8, handling a single BYTES(...) directive.
 
-    If the string is "BYTES(...)" where "..." is a valid hexadecimal string in
-    the format expected by bytes.fromhex(), encoding is skipped and the raw
-    bytes inside the BYTES directive are returned instead.
+    If the string is "BYTES(...)" where "..." is some substring, that substring
+    is encoded using latin-1 rather than utf-8 and the surrounding BYTES()
+    directive is removed.
 
     Examples
     --------
 
     The string "abcdefg" will be encoded to b"abcdefg".
 
-    The string "BYTES(014e80)" will be encoded to b"\x01\x4e\x80".
+    The string "BYTES(\x01\x02\x03\xf0\xe0\xc0)" will be encoded to
+    b"\x10\x20\x30\xf0\xe0\xc0".
 
-    The string "abBYTES(014e80)cd" will be encoded to b"abBYTES(014e80)cd".
+    The string "abBYTES(\x01\x02\x03\xf0\xe0\xc0)cd" will be encoded to
+    b"abBYTES(\x01\x02\x03\xf0\xe0\xc0)cd".
 
-    The string "BYTES(01)BYTES(02)" will be encoded to b"BYTES(01)BYTES(02)".
+    The string "BYTES(\x01)BYTES(\x02)" will be encoded to
+    b"BYTES(\x01)BYTES(\x02)".
 
     """
-    if match := re.fullmatch(r"BYTES\(([a-fA-f0-9 ]+)\)", val):
-        return bytes.fromhex(match[1])
+    if match := re.fullmatch(r"BYTES\((.*)\)", val):
+        return match[1].encode("latin-1")
     return val.encode()
 
 
@@ -98,7 +101,7 @@ def to_bytes(val):
 
     val = val.replace("\\r", "\r").replace("\\n", "\n")
 
-    partitioned_string = re.split(r"(BYTES\([a-fA-F0-9 ]+\))", val)
+    partitioned_string = re.split(r"(BYTES\([^)]+\))", val)
     return b"".join(map(_single_to_bytes, partitioned_string))
 
 
