@@ -1,6 +1,12 @@
 PyVISA-sim Changelog
 ====================
 
+Unreleased
+----------
+- add support for BYTES directive PR #220
+  BYTES allows raw bytes to be inserted into dialogues, useful for non-ASCII
+  instruments.
+
 0.7.1 (04-09-2025)
 ------------------
 
