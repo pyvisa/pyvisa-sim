@@ -80,9 +80,9 @@ def to_bytes(val: Literal[Responses.NO]) -> Literal[Responses.NO]: ...
 def to_bytes(val):
     """Takes a text message or NoResponse and encode it.
 
-    Any substrings of the form "BYTES(...)" with "..." being a valid
-    hexadecimal string in the format expected by bytes.fromhex() will be
-    replaced with the bytes inside the BYTES directive.
+    Any substring of the form "BYTES(...)" where "..." is some substring, that
+    substring is encoded using latin-1 rather than utf-8 and the surrounding
+    BYTES() directive is removed.
 
     Examples
     --------
