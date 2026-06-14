@@ -1,6 +1,12 @@
 PyVISA-sim Changelog
 ====================
 
+Unreleased
+----------
+
+- add support for pyvisa.SerialInstrument.bytes_in_buffer() PR #219
+- add partial support for `viFlush` in `SimVisaLibrary.flush()` PR #219
+
 0.7.1 (04-09-2025)
 ------------------
 
