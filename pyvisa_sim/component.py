@@ -42,6 +42,33 @@ OptionalStr: TypeAlias = Union[str, Literal[Responses.NO]]
 OptionalBytes: TypeAlias = Union[bytes, Literal[Responses.NO]]
 
 
+def _single_to_bytes(val: str) -> bytes:
+    """Encodes a string with UTF-8, handling a single BYTES(...) directive.
+
+    If the string is "BYTES(...)" where "..." is some substring, that substring
+    is encoded using latin-1 rather than utf-8 and the surrounding BYTES()
+    directive is removed.
+
+    Examples
+    --------
+
+    The string "abcdefg" will be encoded to b"abcdefg".
+
+    The string "BYTES(\x01\x02\x03\xf0\xe0\xc0)" will be encoded to
+    b"\x10\x20\x30\xf0\xe0\xc0".
+
+    The string "abBYTES(\x01\x02\x03\xf0\xe0\xc0)cd" will be encoded to
+    b"abBYTES(\x01\x02\x03\xf0\xe0\xc0)cd".
+
+    The string "BYTES(\x01)BYTES(\x02)" will be encoded to
+    b"BYTES(\x01)BYTES(\x02)".
+
+    """
+    if match := re.fullmatch(r"BYTES\((.*)\)", val):
+        return match[1].encode("latin-1")
+    return val.encode()
+
+
 @overload
 def to_bytes(val: str) -> bytes: ...
 
@@ -51,12 +78,31 @@ def to_bytes(val: Literal[Responses.NO]) -> Literal[Responses.NO]: ...
 
 
 def to_bytes(val):
-    """Takes a text message or NoResponse and encode it."""
+    """Takes a text message or NoResponse and encode it.
+
+    Any substring of the form "BYTES(...)" where "..." is some substring, that
+    substring is encoded using latin-1 rather than utf-8 and the surrounding
+    BYTES() directive is removed.
+
+    Examples
+    --------
+
+    The string "abcdefg" will be encoded to b"abcdefg".
+
+    The string "BYTES(014e80)" will be encoded to b"\x01\x4e\x80".
+
+    The string "abBYTES(014e80)cd" will be encoded to b"ab\x01\x4e\x80cd".
+
+    The string "BYTES(01)BYTES(02)" will be encoded to b"\x01\x02".
+
+    """
     if val is NoResponse:
         return val
 
     val = val.replace("\\r", "\r").replace("\\n", "\n")
-    return val.encode()
+
+    partitioned_string = re.split(r"(BYTES\([^)]+\))", val)
+    return b"".join(map(_single_to_bytes, partitioned_string))
 
 
 T = TypeVar("T", int, float, str)

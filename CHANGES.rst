@@ -4,6 +4,9 @@ PyVISA-sim Changelog
 Unreleased
 ----------
 
+- add support for BYTES directive PR #220
+  BYTES allows raw bytes to be inserted into dialogues, useful for non-ASCII
+  instruments.
 - add support for pyvisa.SerialInstrument.bytes_in_buffer() PR #219
 - add partial support for `viFlush` in `SimVisaLibrary.flush()` PR #219
 
