@@ -372,28 +372,34 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         except KeyError:
             return 0, constants.StatusCode.error_invalid_object
 
-        if mask == constants.BufferOperation.discard_read_buffer:
-            # TODO END indicator
-            raise NotImplementedError("try discard_read_buffer_no_io instead")
-
-        elif mask in {
-            constants.BufferOperation.discard_read_buffer_no_io,
+        if mask in {
             constants.BufferOperation.discard_receive_buffer,
             constants.BufferOperation.discard_receive_buffer2,
         }:
+            # different from VISA's definition of receive buffer! rather than
+            # being a serial I/O buffer on a host computer, PyVISA-sim's
+            # receive buffer is the *device*'s output buffer.
             sess.device._output_buffers.clear()
 
-        elif mask in {
-            constants.BufferOperation.discard_write_buffer,
-            constants.BufferOperation.discard_transmit_buffer,
-        }:
-            del sess.device._input_buffer[0:]
+        elif mask == constants.BufferOperation.discard_transmit_buffer:
+            # see previous comment. transmit buffer is the *device*'s input
+            # buffer
+            sess.device._input_buffer = bytearray()
+
+        elif mask == constants.BufferOperation.flush_transmit_buffer:
+            # see previous comments. cannot flush the transmit buffer because
+            # it *is* the input buffer of the device itself.
+            pass
 
         elif mask in {
+            constants.BufferOperation.discard_read_buffer,
+            constants.BufferOperation.discard_read_buffer_no_io,
+            constants.BufferOperation.discard_write_buffer,
             constants.BufferOperation.flush_write_buffer,
-            constants.BufferOperation.flush_transmit_buffer,
         }:
-            sess.device.write(bytes(sess.device._input_buffer))
+            raise NotImplementedError(
+                "PyVISA-sim does not implement VISA formatted I/O buffers. Use the low-level I/O buffers instead (e.g. discard_receive_buffer)."
+            )
 
         else:
             raise ValueError(f"unrecognized buffer operation {mask}")
