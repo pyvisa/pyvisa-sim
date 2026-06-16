@@ -64,7 +64,7 @@ def _single_to_bytes(val: str) -> bytes:
     b"BYTES(\x01)BYTES(\x02)".
 
     """
-    if match := re.fullmatch(r"BYTES\((.*)\)", val):
+    if match := re.fullmatch(r"BYTES\((.*)\)", val, flags=re.DOTALL):
         return match[1].encode("latin-1")
     return val.encode()
 
