@@ -23,7 +23,7 @@ from pyvisa_sim import component
         (
             "BYTES(\xaa\x55\x00\x03\x08\n\xb0\x3a)",
             b"\xaa\x55\x00\x03\x08\n\xb0\x3a",
-        )
+        ),
     ],
 )
 def test_bytes_directive(data: str, want: str):
