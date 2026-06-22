@@ -64,7 +64,7 @@ def _single_to_bytes(val: str) -> bytes:
     b"BYTES(\x01)BYTES(\x02)".
 
     """
-    if match := re.fullmatch(r"BYTES\((.*)\)", val):
+    if match := re.fullmatch(r"BYTES\((.*)\)", val, flags=re.DOTALL):
         return match[1].encode("latin-1")
     return val.encode()
 
@@ -89,11 +89,13 @@ def to_bytes(val):
 
     The string "abcdefg" will be encoded to b"abcdefg".
 
-    The string "BYTES(014e80)" will be encoded to b"\x01\x4e\x80".
+    The string "BYTES(\x01\x02\x03\xf0\xe0\xc0)" will be encoded to
+    b"\x10\x20\x30\xf0\xe0\xc0".
 
-    The string "abBYTES(014e80)cd" will be encoded to b"ab\x01\x4e\x80cd".
+    The string "abBYTES(\x01\x02\x03\xf0\xe0\xc0)cd" will be encoded to
+    b"ab\x01\x02\x03\xf0\xe0\xc0cd".
 
-    The string "BYTES(01)BYTES(02)" will be encoded to b"\x01\x02".
+    The string "BYTES(\x01)BYTES(\x02)" will be encoded to b"\x01\x02".
 
     """
     if val is NoResponse:
