@@ -4,6 +4,7 @@ import random
 
 import pytest
 
+import pyvisa.constants as constants
 from pyvisa.errors import VisaIOError
 
 # We must fix the seed in order to have reproducible random numbers when
@@ -41,6 +42,52 @@ def test_list(resource_manager):
         "GPIB0::9::INSTR",
         "GPIB0::10::INSTR",
     }
+
+
+@pytest.mark.parametrize(
+    "resource",
+    [
+        "ASRL1::INSTR",
+        "GPIB0::8::INSTR",
+        "TCPIP0::localhost::inst0::INSTR",
+        "TCPIP0::localhost::10001::SOCKET",
+        "USB0::0x1111::0x2222::0x1234::0::INSTR",
+        "USB0::0x1111::0x2222::0x4445::0::RAW",
+    ],
+)
+def test_flush_buffer(resource, resource_manager):
+    inst = resource_manager.open_resource(
+        resource,
+        read_termination="\n",
+        write_termination="\r\n" if resource.startswith("ASRL") else "\n",
+    )
+    visa_library = inst.visalib
+    session_handle = inst.session
+    session = visa_library.sessions[session_handle]
+
+    with pytest.raises(ValueError):
+        inst.flush(constants.BufferOperation.discard_receive_buffer + 1)
+
+    with pytest.raises(NotImplementedError):
+        inst.flush(constants.BufferOperation.discard_read_buffer)
+    with pytest.raises(NotImplementedError):
+        inst.flush(constants.BufferOperation.discard_read_buffer_no_io)
+    with pytest.raises(NotImplementedError):
+        inst.flush(constants.BufferOperation.discard_write_buffer)
+    with pytest.raises(NotImplementedError):
+        inst.flush(constants.BufferOperation.flush_write_buffer)
+
+    session.device._input_buffer = bytearray(b"qwerty")
+    inst.flush(constants.BufferOperation.discard_transmit_buffer)
+    assert session.device._input_buffer == bytearray()
+
+    session.device._output_buffer = bytearray(b"qwerty")
+    inst.flush(constants.BufferOperation.discard_receive_buffer)
+    assert session.device._input_buffer == bytearray()
+
+    session.device._output_buffer = bytearray(b"qwerty")
+    inst.flush(constants.BufferOperation.discard_receive_buffer2)
+    assert session.device._input_buffer == bytearray()
 
 
 @pytest.mark.parametrize(
