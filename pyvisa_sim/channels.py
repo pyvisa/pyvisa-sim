@@ -59,7 +59,9 @@ class ChDict(Dict[str, Dict[bytes, V]]):
     def __missing__(self, key: str) -> Dict[bytes, V]:
         """Create a channel specialized version of the mapping found in __default__."""
         return {
-            k.decode("utf-8").format(ch_id=key).encode("utf-8"): v
+            k.decode("utf-8", errors="surrogateescape")
+            .format(ch_id=key)
+            .encode("utf-8", errors="surrogateescape"): v
             for k, v in self["__default__"].items()
         }
 
@@ -183,7 +185,11 @@ class Channels(Component):
 
     def _match_setters(self, query: bytes) -> Optional[OptionalBytes]:
         """Try to find a match"""
-        q = query.decode("utf-8")
+        try:
+            q = query.decode("utf-8")
+        except UnicodeDecodeError:
+            # Setters use text patterns, unlike raw-byte dialogues.
+            return None
         for name, parser, response, error_response in self._setters:
             try:
                 parsed = parser(q)
