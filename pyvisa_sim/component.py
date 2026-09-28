@@ -359,8 +359,11 @@ class Component:
             response = dialogues[query]
             logger.debug("Found response in queries: %s" % repr(response))
 
-            if response is not NoResponse and "RANDOM" in response.decode("utf-8"):
-                response = random_response(response.decode("utf-8")).encode("utf-8")
+            if response is not NoResponse and b"RANDOM" in response:
+                # Preserve raw bytes around text formatting directives.
+                response = random_response(
+                    response.decode("utf-8", errors="surrogateescape")
+                ).encode("utf-8", errors="surrogateescape")
 
             return response
 
@@ -417,7 +420,11 @@ class Component:
             Response if a dialog matched.
 
         """
-        q = query.decode("utf-8")
+        try:
+            q = query.decode("utf-8")
+        except UnicodeDecodeError:
+            # Setters use text patterns; binary commands may match a channel.
+            return None
         for name, parser, response, error_response in self._setters:
             try:
                 value = parser(q)
