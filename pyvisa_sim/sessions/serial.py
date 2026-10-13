@@ -6,9 +6,9 @@
 
 """
 
-from typing import Tuple
+from typing import Any, Tuple
 
-from pyvisa import constants, rname
+from pyvisa import attributes, constants, rname
 
 from .. import common
 from . import session
@@ -17,6 +17,24 @@ from . import session
 @session.Session.register(constants.InterfaceType.asrl, "INSTR")
 class SerialInstrumentSession(session.MessageBasedSession):
     parsed: rname.ASRLInstr
+
+    def get_attribute(
+        self, attribute: constants.ResourceAttribute
+    ) -> Tuple[Any, constants.StatusCode]:
+        if attribute == constants.ResourceAttribute.asrl_avalaible_number:
+            try:
+                attr = attributes.AttributesByID[attribute]
+            except KeyError:
+                return 0, constants.StatusCode.error_nonsupported_attribute
+
+            if not attr.in_resource(self.session_type):
+                return 0, constants.StatusCode.error_nonsupported_attribute
+
+            return (
+                sum(map(len, self.device._output_buffers)),
+                constants.StatusCode.success,
+            )
+        return super().get_attribute(attribute)
 
     def after_parsing(self) -> None:
         self.attrs[constants.ResourceAttribute.interface_number] = int(
