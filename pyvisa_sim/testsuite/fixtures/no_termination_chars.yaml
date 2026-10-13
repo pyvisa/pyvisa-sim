@@ -1,0 +1,33 @@
+# TODO: write dialogues and properties of a real non-IEEE 488.2 or SCPI device,
+# as those ones could have no write termination. IEEE 488.2 over serial (not
+# GPIB) is required to have linefeed as write termination.
+
+spec: "1.1"
+devices:
+  device 1:
+    eom:
+      ASRL INSTR:
+        q: ""
+        r: ""
+    dialogues:
+      - q: "*IDN?"
+        r: "SCPI,MOCK,VERSION_1.0"
+      - q: "*ESR?"
+        r: "32"
+      - q: "*STB?"
+        r: "255"
+    properties:
+      current:
+        default: 1.0
+        getter:
+          q: ":CURR:IMM:AMPL?"
+          r: "{:+.8E}"
+        setter:
+          q: ":CURR:IMM:AMPL {:.3f}"
+        specs:
+          min: 1
+          max: 6
+          type: float
+resources:
+  ASRL1::INSTR:
+    device: device 1
