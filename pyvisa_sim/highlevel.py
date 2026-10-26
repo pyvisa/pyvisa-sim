@@ -124,7 +124,6 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
             Status code describing the operation execution.
 
         """
-
         try:
             open_timeout = int(open_timeout)
         except ValueError:
@@ -150,7 +149,9 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
             assert isinstance(r_name, str)
             sess.device = self.devices[r_name]
         except KeyError:
-            return VISASession(0), constants.StatusCode.error_resource_not_found
+            return VISASession(0), self.handle_return_value(
+                None, constants.StatusCode.error_resource_not_found
+            )
 
         return self._register(sess), constants.StatusCode.success
 
@@ -176,7 +177,9 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
             del self.sessions[session]  # type: ignore
             return constants.StatusCode.success
         except KeyError:
-            return constants.StatusCode.error_invalid_object
+            return self.handle_return_value(
+                session, constants.StatusCode.error_invalid_object
+            )
 
     def open_default_resource_manager(
         self,
@@ -255,7 +258,9 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
                 raise errors.VisaIOError(constants.VI_ERROR_TMO)
             return bytes(chunk), status
         except AttributeError:
-            return b"", constants.StatusCode.error_nonsupported_operation
+            return b"", self.handle_return_value(
+                session, constants.StatusCode.error_nonsupported_operation
+            )
 
     def write(
         self, session: VISASession, data: bytes
@@ -283,13 +288,17 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         try:
             sess = self.sessions[session]
         except KeyError:
-            return 0, constants.StatusCode.error_invalid_object
+            return 0, self.handle_return_value(
+                session, constants.StatusCode.error_invalid_object
+            )
 
         try:
             # We have an explicit except AttributeError
             return sess.write(data)  # type: ignore
         except AttributeError:
-            return 0, constants.StatusCode.error_nonsupported_operation
+            return 0, self.handle_return_value(
+                session, constants.StatusCode.error_nonsupported_operation
+            )
 
     def get_attribute(
         self,
@@ -318,7 +327,9 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         try:
             sess = self.sessions[session]  # type: ignore
         except KeyError:
-            return 0, constants.StatusCode.error_invalid_object
+            return 0, self.handle_return_value(
+                session, constants.StatusCode.error_invalid_object
+            )
 
         # Not sure how to handle events yet and I do not want to error if people keep
         # using the bare attribute values.
@@ -352,7 +363,9 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         try:
             sess = self.sessions[session]  # type: ignore
         except KeyError:
-            return constants.StatusCode.error_invalid_object
+            return self.handle_return_value(
+                session, constants.StatusCode.error_invalid_object
+            )
 
         # Not sure how to handle events yet and I do not want to error if people keep
         # using the bare attribute values.
