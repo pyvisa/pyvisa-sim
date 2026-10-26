@@ -43,6 +43,11 @@ def test_list(resource_manager):
     }
 
 
+def test_unknown_resource(resource_manager):
+    with pytest.raises(VisaIOError):
+        resource_manager.open_resource("ASRL10::INSTR")
+
+
 @pytest.mark.parametrize(
     "resource",
     [
