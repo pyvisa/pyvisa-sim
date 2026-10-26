@@ -113,6 +113,32 @@ response will be given by the device as well.
 
 You can have as many items as you want.
 
+SCPI-compatible commands
+~~~~~~~~~~~~~~~~~~~~~~~
+
+If the command follows SCPI conventions, you can add ``scpi: true`` to a
+``dialogues`` entry, a property getter or a property setter to make the command
+match case-insensitively and accept valid mnemonic prefix abbreviations.
+
+.. code-block:: yaml
+
+    dialogues:
+      - q: ":VOLTage:IMMediate:AMPLitude?"
+        r: "+1.00000000E+00"
+        scpi: true
+
+    properties:
+      voltage:
+        getter:
+          q: ":VOLTage:IMMediate:AMPLitude?"
+          r: "{:+.8E}"
+          scpi: true
+        setter:
+          q: ":VOLTage:IMMediate:AMPLitude {:.3f}"
+          scpi: true
+
+A command such as ``:voltage:immediate:amplitude?`` or the abbreviated form
+``:volt:imm:ampl?`` will therefore match the same definition.
 
 properties
 ~~~~~~~~~~

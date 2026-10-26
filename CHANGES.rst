@@ -3,6 +3,8 @@ PyVISA-sim Changelog
 
 Unreleased
 ----------
+- add SCPI-aware matching for dialogues, getters, and setters configured with
+  ``scpi: true`` so mixed-case and abbreviated command names resolve correctly.
 - handle return status code to raise on error status code as expected by PyVISA #246
 - add support for BYTES directive PR #220
   BYTES allows raw bytes to be inserted into dialogues, useful for non-ASCII
