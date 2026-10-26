@@ -6,7 +6,11 @@
 
 """
 
+import itertools
+import re
 from typing import Deque, Dict, List, Optional, Tuple, Union
+
+import stringparser
 
 from pyvisa import constants, rname
 
@@ -227,6 +231,74 @@ class Device(Component):
             to_bytes(response_termination),
         )
 
+    def _process_single_query(self, the_bytes: bytes) -> int:
+        """Process one valid query in the input buffer.
+
+        Searches for a valid query (according to the yaml file) from the
+        beginning of the given bytes. If a valid query is found, the matching
+        dialogue response is added to the device output buffer, and the matched
+        query is removed from the input buffer. Everything before the matched
+        query is also removed from the input buffer.
+
+        Returns
+        -------
+
+        int: The number of bytes removed from the input buffer. It may
+        be 0, in which case no query matching a dialogue was found.
+
+        """
+        # the stringparser Parsers for each setter query
+        setter_query_parsers = filter(
+            lambda i: isinstance(i, stringparser.Parser),
+            [next(iter(t[1:])) for t in self._setters],
+        )
+        # the setter query regular expressions
+        setter_query_regex_patterns = [parser._regex for parser in setter_query_parsers]  # type: ignore[union-attr] # parsers guaranteed to be parser objects by filter iterator
+        for query in itertools.chain(
+            iter(self._dialogues | self._getters), setter_query_regex_patterns
+        ):
+            # query is a setter query regular expression
+            if isinstance(query, re.Pattern):
+                try:
+                    # remove the ^ and $ added by stringparser around the regex
+                    # that stringparser adds, because the buffer can contain
+                    # other messages
+                    new_pattern = re.compile(
+                        # TODO are there downsides to not using UTF-8? latin-1
+                        # preserves raw bytes above 127, which is useful for
+                        # instruments that accept non-ascii bytes.
+                        query.pattern.removeprefix("^")
+                        .removesuffix("$")
+                        .encode("latin-1")
+                    )
+                    match = new_pattern.search(the_bytes)
+                    query_index = match.start()  # type: ignore[union-attr] # None will raise AttributeError handled by try block
+                    query_len = len(match[0])  # type: ignore[index] # only executed if match is not None
+                # search returned None
+                except AttributeError:
+                    continue
+
+            # query is a dialogue or getter
+            elif isinstance(query, bytes):
+                # try the next key if this one not found
+                if (query_index := the_bytes.find(query)) == -1:
+                    continue
+                query_len = len(query)
+
+            if (
+                response := self._match(
+                    the_bytes[query_index : query_index + query_len]
+                )
+            ) is not None and response is not NoResponse:
+                self._output_buffers.append(bytearray(response))
+
+            # to keep the garbage bytes:
+            # del self._input_buffer[query_index:query_index+query_len]
+            del self._input_buffer[0 : query_index + query_len]
+            return query_len
+
+        return 0
+
     def write(self, data: bytes) -> None:
         """Write data into the device input buffer."""
         logger.debug("Writing into device input buffer: %r" % data)
@@ -239,22 +311,47 @@ class Device(Component):
         if not self._input_buffer.endswith(self._query_eom):
             return
 
-        try:
-            message = bytes(self._input_buffer[:-le])
-            queries = message.split(self.delimiter) if self.delimiter else [message]
-            for query in queries:
-                response = self._match(query)
-                eom = self._response_eom
+        # TODO: I feel like a simplifying refactor can be done
 
-                if response is None:
-                    response = self.error_response("command_error")
-                    assert response is not None
+        # handle the no write termination case separately. importantly, the
+        # input buffer is not cleared if no valid message is found. once a
+        # valid message is found (starting from the end of the buffer), it and
+        # only it is removed from the input buffer
+        if self._query_eom == b"":
+            message = bytes(self._input_buffer)
+            response = self._match(message)
 
+            # initial dialogue lookup failed
+            if response is None:
+                # incrementally scan for a match starting from the beginning of
+                # the buffer
+                while self._process_single_query(message) != 0:
+                    message = bytes(self._input_buffer)
+
+            # initial dialogue lookup succeeded
+            else:
                 if response is not NoResponse:
-                    self._output_buffers.append(bytearray(response) + eom)
+                    self._output_buffers.append(bytearray(response))
+                del self._input_buffer[-len(message) :]
 
-        finally:
-            self._input_buffer = bytearray()
+        else:
+            try:
+                message = bytes(self._input_buffer[:-le])
+
+                queries = message.split(self.delimiter) if self.delimiter else [message]
+                for query in queries:
+                    response = self._match(query)
+                    eom = self._response_eom
+
+                    if response is None:
+                        response = self.error_response("command_error")
+                        assert response is not None
+
+                    if response is not NoResponse:
+                        self._output_buffers.append(bytearray(response) + eom)
+
+            finally:
+                self._input_buffer = bytearray()
 
     def read(self) -> Tuple[bytes, bool]:
         """
