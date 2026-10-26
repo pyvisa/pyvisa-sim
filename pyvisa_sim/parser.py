@@ -22,6 +22,7 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
+    overload,
 )
 
 import yaml
@@ -63,9 +64,21 @@ class SimpleChainmap(Generic[K, V]):
         raise KeyError(key)
 
 
-def _get_pair(dd: Dict[str, str]) -> Tuple[str, str]:
+@overload
+def _get_pair(
+    dd: Dict[str, str], response_optional: Literal[True] = True
+) -> tuple[str, str | Literal[Responses.NO]]: ...
+@overload
+def _get_pair(
+    dd: Dict[str, str], response_optional: Literal[False]
+) -> tuple[str, str]: ...
+
+
+def _get_pair(dd, response_optional=True):
     """Return a pair from a dialogue dictionary."""
-    return dd["q"].strip(" "), dd["r"].strip(" ") if "r" in dd else NoResponse  # type: ignore[return-value]
+    if not response_optional and "r" not in dd:
+        raise ValueError("Response is required but not found in dialogue dictionary")
+    return dd["q"].strip(" "), dd["r"].strip(" ") if "r" in dd else NoResponse
 
 
 def _get_triplet(
@@ -128,14 +141,19 @@ def update_component(
     """Get a component from a component dict."""
     for dia in component_dict.get("dialogues", ()):
         try:
-            comp.add_dialogue(*_get_pair(dia))
+            query, response = _get_pair(dia)
+            comp.add_dialogue(query, response, scpi=bool(dia.get("scpi", False)))
         except Exception as e:
             msg = "In device %s, malformed dialogue %s\n%r"
             raise Exception(msg % (name, dia, e))
 
     for prop_name, prop_dict in component_dict.get("properties", {}).items():
         try:
-            getter = _get_pair(prop_dict["getter"]) if "getter" in prop_dict else None
+            getter = (
+                _get_pair(prop_dict["getter"], response_optional=False)
+                if "getter" in prop_dict
+                else None
+            )
             setter = (
                 _get_triplet(prop_dict["setter"]) if "setter" in prop_dict else None
             )
@@ -145,6 +163,8 @@ def update_component(
                 getter,
                 setter,
                 prop_dict.get("specs", {}),
+                getter_scpi=bool(prop_dict.get("getter", {}).get("scpi", False)),
+                setter_scpi=bool(prop_dict.get("setter", {}).get("scpi", False)),
             )
         except Exception as e:
             msg = "In device %s, malformed property %s\n%r"
@@ -158,7 +178,7 @@ def get_bases(definition_dict: Dict[str, Any], loader: "Loader") -> Dict[str, An
         # FIXME this currently does not work
         raise NotImplementedError
         bases = (
-            loader.get_comp_dict(required_version=SPEC_VERSION_TUPLE[0], **b)  # type: ignore
+            loader.get_comp_dict(required_version=SPEC_VERSION_TUPLE[0], **b)
             for b in bases
         )
         return SimpleChainmap(definition_dict, *bases)
@@ -240,7 +260,10 @@ def get_device(
     device.add_error_handler(err)
 
     for itype, eom_dict in device_dict.get("eom", {}).items():
-        device.add_eom(itype, *_get_pair(eom_dict))
+        wt, rt = _get_pair(eom_dict)
+        if rt is NoResponse:
+            raise ValueError("No read termination specified for EOM.")
+        device.add_eom(itype, wt, rt)
 
     update_component(name, device, device_dict)
 

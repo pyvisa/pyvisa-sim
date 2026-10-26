@@ -7,12 +7,22 @@
 """
 
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, TypeVar
 
 import stringparser
 
 from .common import logger
-from .component import Component, OptionalBytes, OptionalStr, Property, T, to_bytes
+from .component import (
+    Component,
+    OptionalBytes,
+    OptionalStr,
+    Property,
+    Responses,
+    T,
+    _normalize_scpi_match,
+    _query_variants_for_scpi,
+    to_bytes,
+)
 
 if TYPE_CHECKING:
     from .devices import Device
@@ -80,9 +90,13 @@ class Channels(Component):
         self._device = device
         self._ids = ids
         self._getters = ChDict(__default__={})
+        self._getters_scpi = ChDict(__default__={})
         self._dialogues = ChDict(__default__={})
+        self._dialogues_scpi = ChDict(__default__={})
 
-    def add_dialogue(self, query: str, response: str) -> None:
+    def add_dialogue(
+        self, query: str, response: str | Literal[Responses.NO], scpi: bool = False
+    ) -> None:
         """Add dialogue to channel.
 
         Parameters
@@ -91,8 +105,16 @@ class Channels(Component):
             Query string to which this dialogue answers to.
         response : str
             Response sent in response to a query.
+        scpi : bool, optional
+            Whether the dialogue should accept SCPI mnemonic prefixes.
 
         """
+        if scpi:
+            for alias in _query_variants_for_scpi(query):
+                self._dialogues_scpi["__default__"][to_bytes(alias)] = to_bytes(
+                    response
+                )
+            return
         self._dialogues["__default__"][to_bytes(query)] = to_bytes(response)
 
     def add_property(
@@ -102,6 +124,8 @@ class Channels(Component):
         getter_pair: Optional[Tuple[str, str]],
         setter_triplet: Optional[Tuple[str, OptionalStr, OptionalStr]],
         specs: Dict[str, str],
+        getter_scpi: bool = False,
+        setter_scpi: bool = False,
     ) -> None:
         """Add property to channel
 
@@ -124,13 +148,27 @@ class Channels(Component):
 
         if getter_pair:
             query, response = getter_pair
-            self._getters["__default__"][to_bytes(query)] = name, response
+            if getter_scpi:
+                for alias in _query_variants_for_scpi(query):
+                    self._getters_scpi["__default__"][to_bytes(alias)] = name, response
+            else:
+                self._getters["__default__"][to_bytes(query)] = name, response
 
         if setter_triplet:
             query, response_, error = setter_triplet
-            self._setters.append(
-                (name, stringparser.Parser(query), to_bytes(response_), to_bytes(error))
-            )
+            variants = _query_variants_for_scpi(query) if setter_scpi else [query]
+            for alias in variants:
+                self._setters.append(
+                    (
+                        name,
+                        stringparser.Parser(
+                            alias if not setter_scpi else alias.lower()
+                        ),
+                        to_bytes(response_),
+                        to_bytes(error),
+                        setter_scpi,
+                    )
+                )
 
     def match(self, query: bytes) -> Optional[OptionalBytes]:
         """Try to find a match for a query in the channel commands."""
@@ -141,22 +179,38 @@ class Channels(Component):
             else:
                 return None
 
-            response = self._match_dialog(query, self._dialogues["__default__"])
+            response = self._match_dialog(
+                query,
+                self._dialogues["__default__"],
+                self._dialogues_scpi["__default__"],
+            )
             if response is not None:
                 return response
 
-            response = self._match_getters(query, self._getters["__default__"])
+            response = self._match_getters(
+                query,
+                self._getters["__default__"],
+                self._getters_scpi["__default__"],
+            )
             if response is not None:
                 return response
 
         else:
             for ch_id in self._ids:
                 self._selected = ch_id
-                response = self._match_dialog(query, self._dialogues[ch_id])
+                response = self._match_dialog(
+                    query,
+                    self._dialogues[ch_id],
+                    self._dialogues_scpi[ch_id],
+                )
                 if response is not None:
                     return response
 
-                response = self._match_getters(query, self._getters[ch_id])
+                response = self._match_getters(
+                    query,
+                    self._getters[ch_id],
+                    self._getters_scpi[ch_id],
+                )
 
                 if response is not None:
                     return response
@@ -178,10 +232,16 @@ class Channels(Component):
     _ids: List[str]
 
     #: Dialogues organized by channel IDs
-    _dialogues: Dict[str, Dict[bytes, bytes]]  # type: ignore
+    _dialogues: Dict[str, Dict[bytes, bytes | Literal[Responses.NO]]]  # type: ignore
+
+    #: SCPI dialogues organized by channel ID
+    _dialogues_scpi: Dict[str, Dict[bytes, bytes | Literal[Responses.NO]]]  # type: ignore
 
     #: Getters organized by channel ID
     _getters: Dict[str, Dict[bytes, Tuple[str, str]]]  # type: ignore
+
+    #: SCPI getters organized by channel ID
+    _getters_scpi: Dict[str, Dict[bytes, Tuple[str, str]]]  # type: ignore
 
     def _match_setters(self, query: bytes) -> Optional[OptionalBytes]:
         """Try to find a match"""
@@ -190,9 +250,10 @@ class Channels(Component):
         except UnicodeDecodeError:
             # Setters use text patterns, unlike raw-byte dialogues.
             return None
-        for name, parser, response, error_response in self._setters:
+        for name, parser, response, error_response, scpi in self._setters:
+            candidate = _normalize_scpi_match(q) if scpi else q
             try:
-                parsed = parser(q)
+                parsed = parser(candidate)
                 logger.debug("Found response in setter of %s" % name)
             except ValueError:
                 continue

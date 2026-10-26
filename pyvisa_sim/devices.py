@@ -6,6 +6,7 @@
 
 """
 
+from collections import deque
 from typing import Deque, Dict, List, Optional, Tuple, Union
 
 from pyvisa import constants, rname
@@ -134,7 +135,7 @@ class Device(Component):
         self._status_registers = {}
         self._error_map = {}
         self._eoms = {}
-        self._output_buffers = Deque()
+        self._output_buffers = deque()
         self._input_buffer = bytearray()
         self._error_queues = {}
 
@@ -206,7 +207,10 @@ class Device(Component):
         return self._error_response.get(error_key)
 
     def add_eom(
-        self, type_class: str, query_termination: str, response_termination: str
+        self,
+        type_class: str,
+        query_termination: str,
+        response_termination: str,
     ) -> None:
         """Add default end of message for a given interface type and resource class.
 

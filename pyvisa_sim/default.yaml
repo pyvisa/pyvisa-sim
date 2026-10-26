@@ -237,10 +237,12 @@ devices:
       voltage:
         default: 1.0
         getter:
-          q: ":VOLT:IMM:AMPL?"
+          q: ":VOLTage:IMMediate:AMPLitude?"
           r: "{:+.8E}"
+          scpi: true
         setter:
-          q: ":VOLT:IMM:AMPL {:.3f}"
+          q: ":VOLTage:IMMediate:AMPLitude {:.3f}"
+          scpi: true
         specs:
           min: 1
           max: 6

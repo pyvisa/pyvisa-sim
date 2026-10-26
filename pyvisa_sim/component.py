@@ -110,6 +110,66 @@ def to_bytes(val):
 T = TypeVar("T", int, float, str)
 
 
+def _split_command_and_suffix(query: str) -> Tuple[str, str]:
+    """Split a command string into its mnemonic and trailing parameter suffix."""
+    if not query:
+        return "", ""
+
+    if " " in query:
+        command, suffix = re.split(r"\s+", query, maxsplit=1)
+        return command, " " + suffix
+
+    return query, ""
+
+
+def _query_variants_for_scpi(query: str) -> List[str]:
+    """Return the set of valid SCPI mnemonic prefixes for a query."""
+    command, suffix = _split_command_and_suffix(query)
+    if not command:
+        return [query]
+
+    parts = re.findall(r"[A-Za-z0-9]+|[^A-Za-z0-9]+", command)
+    aliases: list[str] = [""]
+
+    for part in parts:
+        if re.search(r"[A-Za-z]", part):
+            candidates: list[str] = []
+            for current in aliases:
+                candidates.extend(current + part[:i] for i in range(1, len(part) + 1))
+            aliases = candidates
+        else:
+            aliases = [current + part for current in aliases]
+
+    seen = set()
+    normalized = []
+    for alias in aliases:
+        text = (alias.lower() + suffix).strip()
+        if text not in seen:
+            seen.add(text)
+            normalized.append(text)
+
+    return normalized
+
+
+@overload
+def _normalize_scpi_match(query: str) -> str: ...
+@overload
+def _normalize_scpi_match(query: bytes) -> bytes: ...
+
+
+def _normalize_scpi_match(query):
+    """Lower-case only the SCPI command prefix, preserving trailing arguments."""
+    if isinstance(query, bytes):
+        try:
+            text = query.decode("utf-8")
+        except UnicodeDecodeError:
+            return query
+        return _normalize_scpi_match(text).encode("utf-8")
+
+    command, suffix = _split_command_and_suffix(query)
+    return f"{command.lower()}{suffix}"
+
+
 def random_response(response: str) -> str:
     """
     Return a response containing one or more random values.
@@ -228,14 +288,14 @@ class Property(Generic[T]):
             return string_value  # type: ignore
 
         assert specs.type
-        value: T = specs.type(string_value)  # type: ignore
+        value: T = specs.type(string_value)
         # Mypy dislike comparison with unresolved type vars it seems
-        if specs.min is not None and value < specs.min:  # type: ignore
+        if specs.min is not None and value < specs.min:
             raise ValueError(
                 f"Value provided for {self.name}: {value} "
                 f"is less than the minimum {specs.min}"
             )
-        if specs.max is not None and value > specs.max:  # type: ignore
+        if specs.max is not None and value > specs.max:
             raise ValueError(
                 f"Value provided for {self.name}: {value} "
                 f"is more than the maximum {specs.max}"
@@ -258,11 +318,15 @@ class Component:
 
     def __init__(self) -> None:
         self._dialogues = {}
+        self._dialogues_scpi = {}
         self._properties = {}
         self._getters = {}
+        self._getters_scpi = {}
         self._setters = []
 
-    def add_dialogue(self, query: str, response: str) -> None:
+    def add_dialogue(
+        self, query: str, response: str | Literal[Responses.NO], scpi: bool = False
+    ) -> None:
         """Add dialogue to device.
 
         Parameters
@@ -271,8 +335,16 @@ class Component:
             Query to which the dialog answers to.
         response : str
             Response to the dialog query.
+        scpi : bool, optional
+            Whether the query is SCPI-compliant and should match case-insensitive
+            prefixes.
 
         """
+        if scpi:
+            for alias in _query_variants_for_scpi(query):
+                self._dialogues_scpi[to_bytes(alias)] = to_bytes(response)
+            return
+
         self._dialogues[to_bytes(query)] = to_bytes(response)
 
     def add_property(
@@ -282,6 +354,8 @@ class Component:
         getter_pair: Optional[Tuple[str, str]],
         setter_triplet: Optional[Tuple[str, OptionalStr, OptionalStr]],
         specs: Dict[str, str],
+        getter_scpi: bool = False,
+        setter_scpi: bool = False,
     ):
         """Add property to device
 
@@ -304,13 +378,27 @@ class Component:
 
         if getter_pair:
             query, response = getter_pair
-            self._getters[to_bytes(query)] = name, response
+            if getter_scpi:
+                for alias in _query_variants_for_scpi(query):
+                    self._getters_scpi[to_bytes(alias)] = name, response
+            else:
+                self._getters[to_bytes(query)] = name, response
 
         if setter_triplet:
             query, response_, error = setter_triplet
-            self._setters.append(
-                (name, stringparser.Parser(query), to_bytes(response_), to_bytes(error))
-            )
+            variants = _query_variants_for_scpi(query) if setter_scpi else [query]
+            for alias in variants:
+                self._setters.append(
+                    (
+                        name,
+                        stringparser.Parser(
+                            alias if not setter_scpi else alias.lower()
+                        ),
+                        to_bytes(response_),
+                        to_bytes(error),
+                        setter_scpi,
+                    )
+                )
 
     def match(self, query: bytes) -> Optional[OptionalBytes]:
         """Try to find a match for a query in the instrument commands."""
@@ -318,31 +406,42 @@ class Component:
 
     # --- Private API
 
-    #: Stores the queries accepted by the device.
+    #: Stores the exact-match queries accepted by the device.
     #: query: response
-    _dialogues: Dict[bytes, bytes]
+    _dialogues: Dict[bytes, bytes | Literal[Responses.NO]]
+
+    #: Stores SCPI-compliant query aliases accepted by the device.
+    #: query: response
+    _dialogues_scpi: Dict[bytes, bytes | Literal[Responses.NO]]
 
     #: Maps property names to value, type, validator
     _properties: Dict[str, Property]
 
-    #: Stores the getter queries accepted by the device.
+    #: Stores the exact-match getter queries accepted by the device.
     #: query: (property_name, response)
     _getters: Dict[bytes, Tuple[str, str]]
 
+    #: Stores the SCPI-compliant getter queries accepted by the device.
+    #: query: (property_name, response)
+    _getters_scpi: Dict[bytes, Tuple[str, str]]
+
     #: Stores the setters queries accepted by the device.
-    #: (property_name, string parser query, response, error response)
-    _setters: List[Tuple[str, stringparser.Parser, OptionalBytes, OptionalBytes]]
+    #: (property_name, string parser query, response, error response, scpi)
+    _setters: List[Tuple[str, stringparser.Parser, OptionalBytes, OptionalBytes, bool]]
 
     def _match_dialog(
-        self, query: bytes, dialogues: Optional[Dict[bytes, bytes]] = None
-    ) -> Optional[bytes]:
+        self,
+        query: bytes,
+        dialogues: Optional[Dict[bytes, bytes | Literal[Responses.NO]]] = None,
+        scpi_dialogues: Optional[Dict[bytes, bytes | Literal[Responses.NO]]] = None,
+    ) -> Optional[bytes | Literal[Responses.NO]]:
         """Tries to match in dialogues
 
         Parameters
         ----------
         query : bytes
             Query that we try to match to.
-        dialogues : Optional[Dict[bytes, bytes]], optional
+        dialogues : Optional[Dict[bytes, bytes | Literal[Responses.NO]]], optional
             Alternative dialogs to use when matching.
 
         Returns
@@ -353,6 +452,8 @@ class Component:
         """
         if dialogues is None:
             dialogues = self._dialogues
+        if scpi_dialogues is None:
+            scpi_dialogues = self._dialogues_scpi
 
         # Try to match in the queries
         if query in dialogues:
@@ -367,12 +468,29 @@ class Component:
 
             return response
 
+        try:
+            normalized = _normalize_scpi_match(query)
+        except (TypeError, ValueError):
+            normalized = query
+
+        if normalized in scpi_dialogues:
+            response = scpi_dialogues[normalized]
+            logger.debug("Found response in SCPI query: %r", response)
+
+            if response is not NoResponse and b"RANDOM" in response:
+                response = random_response(
+                    response.decode("utf-8", errors="surrogateescape")
+                ).encode("utf-8", errors="surrogateescape")
+
+            return response
+
         return None
 
     def _match_getters(
         self,
         query: bytes,
         getters: Optional[Dict[bytes, Tuple[str, str]]] = None,
+        scpi_getters: Optional[Dict[bytes, Tuple[str, str]]] = None,
     ) -> Optional[bytes]:
         """Tries to match in getters
 
@@ -380,8 +498,10 @@ class Component:
         ----------
         query : bytes
             Query that we try to match to.
-        dialogues : Optional[Dict[bytes, bytes]], optional
+        getters : Optional[Dict[bytes, Tuple[str, str]]], optional
             Alternative getters to use when matching.
+        scpi_getters : Optional[Dict[bytes, Tuple[str, str]]], optional
+            Alternative SCPI getters to use when matching.
 
         Returns
         -------
@@ -391,10 +511,29 @@ class Component:
         """
         if getters is None:
             getters = self._getters
+        if scpi_getters is None:
+            scpi_getters = self._getters_scpi
 
         if query in getters:
             name, response = getters[query]
             logger.debug("Found response in getter of %s" % name)
+
+            if "RANDOM" in response:
+                response = random_response(response)
+            else:
+                value = self._properties[name].get_value()
+                response = response.format(value)
+
+            return response.encode("utf-8")
+
+        try:
+            normalized = _normalize_scpi_match(query)
+        except (TypeError, ValueError):
+            normalized = query
+
+        if normalized in scpi_getters:
+            name, response = scpi_getters[normalized]
+            logger.debug("Found response in SCPI getter of %s", name)
 
             if "RANDOM" in response:
                 response = random_response(response)
@@ -425,10 +564,11 @@ class Component:
         except UnicodeDecodeError:
             # Setters use text patterns; binary commands may match a channel.
             return None
-        for name, parser, response, error_response in self._setters:
+        for name, parser, response, error_response, scpi in self._setters:
+            candidate = _normalize_scpi_match(q) if scpi else q
             try:
-                value = parser(q)
-                logger.debug("Found response in setter of %s" % name)
+                value = parser(candidate)
+                logger.debug("Found response in setter of %s", name)
             except ValueError:
                 continue
 

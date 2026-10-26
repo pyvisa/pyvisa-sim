@@ -199,7 +199,8 @@ def test_instrument_for_error_state(resource, resource_manager):
     inst.write("FAKE COMMAND")
     assert_instrument_response(inst, ":SYST:ERR?", "1, Command error")
 
-    inst.write(":VOLT:IMM:AMPL 0")
+    assert_instrument_response(inst, ":vOlTaGe:imMeDiAte:amPlitude?", "+1.00000000E+00")
+    inst.write(":vOlTaGe:imMeDiAte:amPlitude 0")
     assert_instrument_response(inst, ":SYST:ERR?", "1, Command error")
 
 
