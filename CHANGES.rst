@@ -1,6 +1,8 @@
 PyVISA-sim Changelog
 ====================
 
+.. towncrier release notes start
+
 Unreleased
 ----------
 - handle return status code to raise on error status code as expected by PyVISA #246
