@@ -1,0 +1,3 @@
+Add support for the ``BYTES`` directive.
+``BYTES`` allows raw bytes to be inserted into dialogues, useful for non-ASCII
+instruments.
