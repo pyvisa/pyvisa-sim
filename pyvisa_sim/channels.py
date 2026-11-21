@@ -82,6 +82,11 @@ class Channels(Component):
         self._getters = ChDict(__default__={})
         self._dialogues = ChDict(__default__={})
 
+    def reset(self) -> None:
+        """Clear the channel selection and restore every channel's properties."""
+        super().reset()
+        self._selected = None
+
     def add_dialogue(self, query: str, response: str) -> None:
         """Add dialogue to channel.
 

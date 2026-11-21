@@ -1,5 +1,34 @@
 # -*- coding: utf-8 -*-
+import shutil
+from contextlib import closing
+from pathlib import Path
+
 import pytest
+
+import pyvisa
+
+
+def test_reset_devices_preserves_sessions(tmp_path):
+    definition = shutil.copy(Path(__file__).parent / "fixtures/channels.yaml", tmp_path)
+    settings = {"read_termination": "\n", "write_termination": "\n"}
+    with (
+        closing(pyvisa.ResourceManager(f"{definition}@sim")) as channels,
+        channels.open_resource("GPIB::8::INSTR", **settings) as first,
+        channels.open_resource("GPIB::8::INSTR", **settings) as second,
+        channels.open_resource("GPIB::9::INSTR", **settings) as other,
+    ):
+        first.write("I 2;F 5.0")
+        assert second.query("F?") == "5.000"
+        other.write("CH 1:VOLT:IMM:AMPL 2.0")
+
+        channels.visalib.reset_devices("GPIB::8::INSTR")
+        assert first.query("I?") == "1"
+        assert second.query("I 2;F?") == "1.000"
+        assert other.query("CH 1:VOLT:IMM:AMPL?") == "+2.00000000E+00"
+
+        channels.visalib.reset_devices()
+        assert first.query("I?") == "1"
+        assert other.query("CH 1:VOLT:IMM:AMPL?") == "+1.00000000E+00"
 
 
 def assert_instrument_response(device, query, data):

@@ -32,6 +32,17 @@ prepended to the @sim string:
 
 You can write your own simulators. See :ref:`definitions` to find out how.
 
+To start a test with the values from the simulation definition, reset a
+specific device or all devices loaded by this backend::
+
+    rm.visalib.reset_devices("ASRL1::INSTR")
+    rm.visalib.reset_devices()
+
+Resetting restores device and channel properties and clears pending messages,
+error queues and status registers. Existing sessions stay open and keep their
+VISA settings. Closing and reopening a resource can therefore be tested
+separately from resetting the instrument.
+
 
 Installation
 ============

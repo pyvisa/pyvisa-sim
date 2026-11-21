@@ -206,7 +206,12 @@ class Property(Generic[T]):
         except ValueError as e:
             raise ValueError(f"Failed to create Specs for property {name}") from e
         self._value = None
+        self._default_value = value
         self.init_value(value)
+
+    def reset(self) -> None:
+        """Restore the value configured in the device definition."""
+        self.init_value(self._default_value)
 
     def init_value(self, string_value: str) -> None:
         """Initialize the value hold by the Property."""
@@ -261,6 +266,11 @@ class Component:
         self._properties = {}
         self._getters = {}
         self._setters = []
+
+    def reset(self) -> None:
+        """Restore all properties to their configured defaults."""
+        for prop in self._properties.values():
+            prop.reset()
 
     def add_dialogue(self, query: str, response: str) -> None:
         """Add dialogue to device.
