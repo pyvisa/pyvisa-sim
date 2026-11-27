@@ -48,6 +48,28 @@ def test_unknown_resource(resource_manager):
         resource_manager.open_resource("ASRL10::INSTR")
 
 
+def test_reset_clears_pending_io_and_errors(resource_manager):
+    settings = {"read_termination": "\n", "write_termination": "\n"}
+    with (
+        resource_manager.open_resource("GPIB::9::INSTR", **settings) as register,
+        resource_manager.open_resource("GPIB::4::INSTR", **settings) as queue,
+    ):
+        register.write("UNKNOWN")
+        register.write("*IDN?")  # Leave its response unread.
+        register.write_raw(b"partial")
+        queue.write("UNKNOWN")
+
+        with pytest.raises(VisaIOError):
+            resource_manager.visalib.reset_devices("GPIB::29::INSTR")
+        resource_manager.visalib.reset_devices(register.resource_name)
+        assert register.query("*ESR?") == "0"
+        assert queue.query(":SYST:ERR?") == "1, Command error"
+
+        queue.write("UNKNOWN")
+        resource_manager.visalib.reset_devices()
+        assert queue.query(":SYST:ERR?") == "0, No Error"
+
+
 @pytest.mark.parametrize(
     "resource",
     [

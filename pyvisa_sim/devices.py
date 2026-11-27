@@ -138,6 +138,18 @@ class Device(Component):
         self._input_buffer = bytearray()
         self._error_queues = {}
 
+    def reset(self) -> None:
+        """Restore device and channel defaults and discard pending I/O and errors."""
+        super().reset()
+        for channels in self._channels.values():
+            channels.reset()
+        for register in self._status_registers.values():
+            register.clear()
+        for queue in self._error_queues.values():
+            queue.clear()
+        self._input_buffer.clear()
+        self._output_buffers.clear()
+
     @property
     def resource_name(self) -> Optional[str]:
         """Assigned resource name"""

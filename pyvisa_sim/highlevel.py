@@ -9,7 +9,7 @@
 import random
 from collections import OrderedDict
 from traceback import format_exc
-from typing import Any, Dict, SupportsInt, Tuple, Union, overload
+from typing import Any, Dict, Optional, SupportsInt, Tuple, Union, overload
 
 import pyvisa.errors as errors
 from pyvisa import constants, highlevel, rname
@@ -70,6 +70,25 @@ class SimVisaLibrary(highlevel.VisaLibraryBase):
         except Exception as e:
             msg = "Could not parse definitions file. %r"
             raise type(e)(msg % format_exc())
+
+    def reset_devices(self, resource_name: Optional[str] = None) -> None:
+        """Restore one simulated device, or all devices, to their initial state.
+
+        Open sessions keep their handles and VISA attributes. All sessions for
+        a reset device see its configured defaults and empty I/O buffers.
+        """
+        if resource_name is None:
+            for name in self.devices.list_resources():
+                self.devices[name].reset()
+        else:
+            name = rname.to_canonical_name(resource_name)
+            try:
+                device = self.devices[name]
+            except KeyError:
+                raise errors.VisaIOError(
+                    constants.StatusCode.error_resource_not_found
+                ) from None
+            device.reset()
 
     @overload
     def _register(self, obj: "SimVisaLibrary") -> VISARMSession: ...
