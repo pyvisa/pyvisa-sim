@@ -1,0 +1,1 @@
+Allow tests to restore one or all simulated devices to their YAML defaults while keeping sessions open.

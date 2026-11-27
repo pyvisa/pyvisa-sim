@@ -1,0 +1,2 @@
+Handle return status codes by raising an error for error status codes as
+expected by PyVISA.

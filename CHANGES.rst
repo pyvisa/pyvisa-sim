@@ -1,14 +1,7 @@
 PyVISA-sim Changelog
 ====================
 
-Unreleased
-----------
-- Allow tests to restore one or all simulated devices to their YAML defaults
-  while keeping sessions open (#83).
-- handle return status code to raise on error status code as expected by PyVISA #246
-- add support for BYTES directive PR #220
-  BYTES allows raw bytes to be inserted into dialogues, useful for non-ASCII
-  instruments.
+.. towncrier release notes start
 
 0.7.1 (04-09-2025)
 ------------------
